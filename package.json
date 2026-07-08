@@ -13,8 +13,6 @@
     "type": "git",
     "url": "git+https://github.com/abhiyoheswaran1/veris.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "MIT",
   "type": "module",
   "bugs": {

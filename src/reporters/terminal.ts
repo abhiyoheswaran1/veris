@@ -39,6 +39,11 @@ export function renderRun(run: VerificationRun): string {
         ? dim(`skipped — ${r.summary}`)
         : secs(r.durationMs);
     lines.push(`  ${glyph(r.status, plain)} ${r.checkId.padEnd(14)} ${detail}`);
+    if (r.outputTail) {
+      for (const tail of r.outputTail.split("\n")) {
+        lines.push(dim(`    ${tail}`));
+      }
+    }
   }
   lines.push("");
   lines.push("Result");

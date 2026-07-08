@@ -1,6 +1,6 @@
 import type { Capability, Check, CheckResult, Project } from "../core/model.js";
-import { exec } from "../util/exec.js";
 import type { RunContext, Runner } from "./index.js";
+import { runViaExec } from "./index.js";
 
 export const nodeTestRunner: Runner = {
   id: "node-test",
@@ -13,16 +13,11 @@ export const nodeTestRunner: Runner = {
       args: ["--test"],
     };
   },
-  async run(check: Check, ctx: RunContext): Promise<CheckResult> {
-    const r = await exec(check.cmd, check.args, {
-      cwd: ctx.root,
+  run(check: Check, ctx: RunContext): Promise<CheckResult> {
+    return runViaExec(check, ctx, {
+      pass: "unit tests passed",
+      fail: "unit tests failed",
       timeoutMs: 10 * 60_000,
     });
-    return {
-      checkId: "unit",
-      status: r.code === 0 ? "passed" : r.timedOut ? "unknown" : "failed",
-      durationMs: r.durationMs,
-      summary: r.code === 0 ? "unit tests passed" : "unit tests failed",
-    };
   },
 };

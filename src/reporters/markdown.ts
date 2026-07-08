@@ -1,3 +1,4 @@
+import { relative } from "node:path";
 import type { VerificationRun } from "../core/model.js";
 
 const STATE_LABEL = {
@@ -6,7 +7,12 @@ const STATE_LABEL = {
   partial: "Partial",
 } as const;
 
+function cell(value: string): string {
+  return value.replace(/\|/g, "\\|");
+}
+
 export function renderMarkdown(run: VerificationRun): string {
+  const root = run.project.root;
   const lines: string[] = [];
   lines.push("# Veris Verification Report");
   lines.push("");
@@ -18,17 +24,33 @@ export function renderMarkdown(run: VerificationRun): string {
   lines.push("");
   lines.push("## Checks");
   lines.push("");
-  lines.push("| Check | Status | Duration | Summary |");
-  lines.push("| --- | --- | --- | --- |");
+  lines.push("| Check | Status | Duration | Summary | Log |");
+  lines.push("| --- | --- | --- | --- | --- |");
   for (const r of run.results) {
     const dur = r.durationMs ? `${(r.durationMs / 1000).toFixed(1)}s` : "—";
-    lines.push(`| ${r.checkId} | ${r.status} | ${dur} | ${r.summary} |`);
+    const log = r.logRef ? cell(relative(root, r.logRef)) : "—";
+    lines.push(
+      `| ${r.checkId} | ${r.status} | ${dur} | ${cell(r.summary)} | ${log} |`,
+    );
   }
   if (run.verdict.skipped.length) {
     lines.push("");
     lines.push("## Skipped");
     lines.push("");
     for (const reason of run.verdict.reasons) lines.push(`- ${reason}`);
+  }
+  const failures = run.results.filter((r) => r.outputTail);
+  if (failures.length) {
+    lines.push("");
+    lines.push("## Failure output");
+    for (const r of failures) {
+      lines.push("");
+      lines.push(`### ${r.checkId}`);
+      lines.push("");
+      lines.push("```");
+      lines.push(r.outputTail ?? "");
+      lines.push("```");
+    }
   }
   lines.push("");
   lines.push(

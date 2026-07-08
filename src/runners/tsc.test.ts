@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Capability, Project } from "../core/model.js";
 import { tscRunner } from "./tsc.js";
@@ -10,5 +11,6 @@ describe("tscRunner", () => {
     );
     expect(check.args).toContain("--noEmit");
     expect(check.id).toBe("types");
+    expect(check.cmd).toContain(join("node_modules", ".bin", "tsc"));
   });
 });

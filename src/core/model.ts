@@ -33,6 +33,7 @@ export interface CheckResult {
   durationMs: number;
   summary: string;
   logRef?: string;
+  outputTail?: string;
   counts?: { passed?: number; failed?: number; total?: number };
 }
 

@@ -21,6 +21,13 @@ const run: VerificationRun = {
       summary: "no type errors",
     },
     {
+      checkId: "unit",
+      status: "failed",
+      durationMs: 1200,
+      summary: "unit tests failed",
+      outputTail: "FAIL src/a.test.ts\nexpected 1 to be 2",
+    },
+    {
       checkId: "lint",
       status: "skipped",
       durationMs: 0,
@@ -28,7 +35,7 @@ const run: VerificationRun = {
     },
   ],
   verdict: {
-    state: "partial",
+    state: "failed",
     verifiedCapabilities: ["types"],
     skipped: ["lint"],
     reasons: ["lint skipped — no linter configured"],
@@ -48,6 +55,12 @@ describe("renderRun", () => {
     expect(out).toContain("types");
     expect(out).toContain("lint");
     expect(out).toContain("skipped");
-    expect(out.toLowerCase()).toContain("partial");
+    expect(out.toLowerCase()).toContain("failed");
+  });
+
+  it("surfaces a failed check's outputTail inline", () => {
+    const out = renderRun(run);
+    expect(out).toContain("FAIL src/a.test.ts");
+    expect(out).toContain("expected 1 to be 2");
   });
 });
