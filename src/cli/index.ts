@@ -28,6 +28,13 @@ export function buildCli() {
       });
     });
 
+  cli
+    .command("report", "Print the latest verification report")
+    .action(async () => {
+      const { runReport } = await import("./commands/report.js");
+      process.exitCode = await runReport(process.cwd());
+    });
+
   return { raw: cli, version: VERSION };
 }
 
