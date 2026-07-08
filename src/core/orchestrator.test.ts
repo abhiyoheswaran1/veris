@@ -31,7 +31,9 @@ describe("runChecks", () => {
       frameworks: [],
       languages: ["javascript"],
       scripts: {},
-      capabilities: [{ id: "lint", available: true, runner: "biome" }],
+      capabilities: [
+        { id: "lint", available: true, runner: "unregistered-linter" },
+      ],
     } as Project;
 
     const run = await runChecks(project, ["lint"], root);
@@ -53,7 +55,7 @@ describe("runChecks", () => {
       scripts: {},
       capabilities: [
         { id: "types", available: true, runner: "tsc" },
-        { id: "lint", available: true, runner: "biome" },
+        { id: "lint", available: true, runner: "unregistered-linter" },
         { id: "unit", available: false, reason: "no test runner detected" },
       ],
     } as Project;
