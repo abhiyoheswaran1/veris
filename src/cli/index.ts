@@ -1,3 +1,6 @@
+import { realpathSync } from "node:fs";
+import { argv } from "node:process";
+import { pathToFileURL } from "node:url";
 import cac from "cac";
 import { VERSION } from "../version.js";
 
@@ -45,9 +48,21 @@ export function buildCli() {
   return { raw: cli, version: VERSION };
 }
 
-export function run(argv: string[]): void {
-  const { raw } = buildCli();
-  raw.parse(argv);
+export async function main(argv: string[]): Promise<void> {
+  try {
+    const { raw } = buildCli();
+    if (argv.length <= 2) {
+      raw.outputHelp();
+      return;
+    }
+    raw.parse(argv);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`veris: ${msg}\n`);
+    process.exitCode = 1;
+  }
 }
 
-run(process.argv);
+const invokedPath = argv[1] ? realpathSync(argv[1]) : "";
+const isEntry = import.meta.url === pathToFileURL(invokedPath).href;
+if (isEntry) void main(argv);

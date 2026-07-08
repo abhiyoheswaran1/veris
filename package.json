@@ -2,10 +2,6 @@
   "name": "veris",
   "version": "0.1.0",
   "description": "The fastest way to prove your software works — a zero-config verification CLI.",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
     "test": "vitest run",
     "build": "tsup",
@@ -44,6 +40,7 @@
   },
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "CHANGELOG.md"
   ]
 }
