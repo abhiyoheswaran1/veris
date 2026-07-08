@@ -5,10 +5,6 @@ import type {
   Verdict,
 } from "./model.js";
 
-// browser is intentionally excluded from the verdict set — it is detect-only
-// in v0.1 (execution deferred to v0.5).
-const CHECKED: CapabilityId[] = ["types", "lint", "unit"];
-
 export function computeVerdict(
   results: CheckResult[],
   capabilities: Capability[],
@@ -19,31 +15,25 @@ export function computeVerdict(
 
   const anyFailed = results.some((r) => r.status === "failed");
 
-  for (const id of CHECKED) {
-    const cap = capabilities.find((c) => c.id === id);
-    if (!cap) continue; // capability not applicable to this project
-
-    const result = results.find((r) => r.checkId === id);
+  for (const cap of capabilities) {
+    const result = results.find((r) => r.checkId === cap.id);
 
     if (!cap.available) {
-      skipped.push(id);
-      reasons.push(`${id} skipped — ${cap.reason ?? "not configured"}`);
+      skipped.push(cap.id);
+      reasons.push(`${cap.id} skipped — ${cap.reason ?? "not configured"}`);
       continue;
     }
-
     if (result?.status === "passed") {
-      verifiedCapabilities.push(id);
+      verifiedCapabilities.push(cap.id);
       continue;
     }
     if (result?.status === "failed") {
-      continue; // the failure is captured by anyFailed below
+      reasons.push(`${cap.id} failed — ${result.summary}`);
+      continue;
     }
-
-    // Available, but the check did not pass or fail: it was skipped, unknown,
-    // or never run. An available capability that did not actually pass must
-    // NOT be counted as verified — fold it into skipped so the verdict is partial.
-    skipped.push(id);
-    reasons.push(`${id} skipped — ${result?.summary ?? "did not run"}`);
+    // available but not passed/failed: skipped, unknown, or never run
+    skipped.push(cap.id);
+    reasons.push(`${cap.id} skipped — ${result?.summary ?? "did not run"}`);
   }
 
   let state: Verdict["state"];

@@ -76,6 +76,15 @@ describe("computeVerdict", () => {
     expect(v.verifiedCapabilities).not.toContain("lint");
   });
 
+  it("partial when a requested capability outside the old CHECKED set is unavailable", () => {
+    const v = computeVerdict(
+      [],
+      [{ id: "browser", available: false, reason: "deferred to v0.5" }],
+    );
+    expect(v.state).toBe("partial");
+    expect(v.skipped).toContain("browser");
+  });
+
   it("partial when an available capability produced no result at all", () => {
     const availableCaps: Capability[] = [
       { id: "types", available: true, runner: "tsc" },
