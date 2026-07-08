@@ -1,0 +1,38 @@
+import pc from "picocolors";
+import { detectProject } from "../../config/detect.js";
+import type { EnvironmentInfo, Project } from "../../core/model.js";
+import { getEnvironmentInfo } from "../../util/env.js";
+import { isPlain } from "../tty.js";
+
+export function renderDoctor(project: Project, env: EnvironmentInfo): string {
+  const plain = isPlain();
+  const ok = (s: string) => (plain ? s : pc.green(s));
+  const dim = (s: string) => (plain ? s : pc.dim(s));
+  const lines: string[] = [];
+  lines.push("Veris doctor");
+  lines.push("");
+  lines.push(`Package manager  ${project.packageManager}`);
+  lines.push(`Node             ${env.node}`);
+  lines.push(`Languages        ${project.languages.join(", ")}`);
+  if (project.frameworks.length)
+    lines.push(`Frameworks       ${project.frameworks.join(", ")}`);
+  lines.push("");
+  lines.push("Capabilities");
+  for (const c of project.capabilities) {
+    if (c.available) {
+      lines.push(`  ${ok("✓")} ${c.id.padEnd(8)} ${dim(`via ${c.runner}`)}`);
+    } else {
+      lines.push(
+        `  ${dim("⊘")} ${c.id.padEnd(8)} ${dim(`skipped — ${c.reason}`)}`,
+      );
+    }
+  }
+  return lines.join("\n");
+}
+
+export async function runDoctor(root: string): Promise<number> {
+  const project = await detectProject(root);
+  const env = getEnvironmentInfo(project.packageManager);
+  process.stdout.write(`${renderDoctor(project, env)}\n`);
+  return 0;
+}
