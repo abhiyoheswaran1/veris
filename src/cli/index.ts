@@ -19,6 +19,13 @@ export function buildCli() {
   });
 
   cli
+    .command("init", "Detect the stack and set up .veris (idempotent)")
+    .action(async () => {
+      const { runInit } = await import("./commands/init.js");
+      process.exitCode = await runInit(process.cwd());
+    });
+
+  cli
     .command("verify", "Run the full check set and produce a verdict + report")
     .option("--partial-ok", "Exit 0 even when the verdict is partial")
     .action(async (opts: { partialOk?: boolean }) => {

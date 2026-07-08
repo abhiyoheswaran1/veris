@@ -1,4 +1,5 @@
 import { detectProject } from "../../config/detect.js";
+import { loadConfig } from "../../config/load.js";
 import type { CapabilityId } from "../../core/model.js";
 import { runChecks } from "../../core/orchestrator.js";
 import { verdictExitCode } from "../../core/verdict.js";
@@ -17,7 +18,9 @@ export async function runVerify(
   opts: { partialOk?: boolean } = {},
 ): Promise<number> {
   const project = await detectProject(root);
-  const run = await runChecks(project, DEFAULT_CHECKS, root);
+  const config = await loadConfig(root);
+  const checks = config?.checks?.length ? config.checks : DEFAULT_CHECKS;
+  const run = await runChecks(project, checks, root);
 
   const reportRef = await writeReport(root, run.id, renderMarkdown(run));
   run.reportRef = reportRef;
