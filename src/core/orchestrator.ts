@@ -22,11 +22,14 @@ export async function runChecks(
     const cap = project.capabilities.find((c) => c.id === capId);
     const runner = cap?.runner ? runners[cap.runner] : undefined;
     if (!cap?.available || !runner) {
+      const summary = !cap?.available
+        ? (cap?.reason ?? "not configured")
+        : `no runner registered for ${cap.runner}`;
       return {
         checkId: capId,
         status: "skipped",
         durationMs: 0,
-        summary: cap?.reason ?? "not configured",
+        summary,
       };
     }
     const check = runner.toCheck(project, cap);

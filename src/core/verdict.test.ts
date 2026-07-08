@@ -51,4 +51,42 @@ describe("computeVerdict", () => {
     expect(v.state).toBe("verified");
     expect(verdictExitCode(v)).toBe(0);
   });
+
+  it("partial when an available capability's runner is unregistered (skipped result)", () => {
+    const availableCaps: Capability[] = [
+      { id: "types", available: true, runner: "tsc" },
+      { id: "unit", available: true, runner: "vitest" },
+      { id: "lint", available: true, runner: "biome" },
+    ];
+    const v = computeVerdict(
+      [
+        res("types", "passed"),
+        res("unit", "passed"),
+        {
+          checkId: "lint",
+          status: "skipped",
+          durationMs: 0,
+          summary: "no runner registered for biome",
+        },
+      ],
+      availableCaps,
+    );
+    expect(v.state).toBe("partial");
+    expect(v.skipped).toContain("lint");
+    expect(v.verifiedCapabilities).not.toContain("lint");
+  });
+
+  it("partial when an available capability produced no result at all", () => {
+    const availableCaps: Capability[] = [
+      { id: "types", available: true, runner: "tsc" },
+      { id: "unit", available: true, runner: "vitest" },
+      { id: "lint", available: true, runner: "biome" },
+    ];
+    const v = computeVerdict(
+      [res("types", "passed"), res("unit", "passed")],
+      availableCaps,
+    );
+    expect(v.state).toBe("partial");
+    expect(v.skipped).toContain("lint");
+  });
 });
