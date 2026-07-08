@@ -14,6 +14,12 @@ export async function runChecks(
   ids: CapabilityId[],
   root: string,
 ): Promise<VerificationRun> {
+  const known = new Set(project.capabilities.map((c) => c.id));
+  const unknown = ids.filter((id) => !known.has(id));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown check id(s): ${unknown.join(", ")}`);
+  }
+
   const id = newRunId();
   const runDir = await createRunDir(root, id);
   const ctx = { root, runDir };

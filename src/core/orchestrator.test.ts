@@ -67,4 +67,20 @@ describe("runChecks", () => {
     expect(run.verdict.skipped).not.toContain("types");
     expect(run.verdict.state).toBe("partial");
   });
+
+  it("throws when asked to run a check id the project has no capability for", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-"));
+    const project = {
+      root,
+      packageManager: "npm",
+      frameworks: [],
+      languages: [],
+      scripts: {},
+      capabilities: [{ id: "unit", available: false, reason: "none" }],
+    } as unknown as Project;
+
+    await expect(runChecks(project, ["types"], project.root)).rejects.toThrow(
+      /Unknown check id/,
+    );
+  });
 });
