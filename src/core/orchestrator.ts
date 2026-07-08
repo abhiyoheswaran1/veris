@@ -37,7 +37,8 @@ export async function runChecks(
   });
 
   const results = await Promise.all(tasks);
-  const verdict = computeVerdict(results, project.capabilities);
+  const requested = project.capabilities.filter((c) => ids.includes(c.id));
+  const verdict = computeVerdict(results, requested);
 
   return {
     id,

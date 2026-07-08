@@ -42,4 +42,29 @@ describe("runChecks", () => {
     expect(result?.summary).toContain("no runner registered");
     expect(run.verdict.state).toBe("partial");
   });
+
+  it("scopes the verdict to the requested ids, excluding available-but-unrequested capabilities", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-"));
+    const project = {
+      root,
+      packageManager: "npm",
+      frameworks: [],
+      languages: ["typescript"],
+      scripts: {},
+      capabilities: [
+        { id: "types", available: true, runner: "tsc" },
+        { id: "lint", available: true, runner: "biome" },
+        { id: "unit", available: false, reason: "no test runner detected" },
+      ],
+    } as Project;
+
+    const run = await runChecks(project, ["lint"], project.root);
+
+    expect(run.results).toHaveLength(1);
+    expect(run.results[0]?.checkId).toBe("lint");
+
+    expect(run.verdict.skipped).toContain("lint");
+    expect(run.verdict.skipped).not.toContain("types");
+    expect(run.verdict.state).toBe("partial");
+  });
 });
