@@ -1,0 +1,7 @@
+node_modules
+dist
+.veris/runs
+.veris/reports
+.veris/cache
+.projscan-memory/
+.superpowers/

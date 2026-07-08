@@ -1,0 +1,49 @@
+{
+  "name": "veris",
+  "version": "0.1.0",
+  "description": "The fastest way to prove your software works — a zero-config verification CLI.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "build": "tsup",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhiyoheswaran1/veris.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/abhiyoheswaran1/veris/issues"
+  },
+  "homepage": "https://github.com/abhiyoheswaran1/veris#readme",
+  "bin": {
+    "veris": "bin/veris"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cac": "^7.0.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
+    "@types/node": "^26.1.1",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "projectName": "veris",
+  "createdAt": "2026-07-08T19:09:27.412Z",
+  "engines": {
+    "projscan": {
+      "enabled": true,
+      "mode": "npx"
+    },
+    "agentloopkit": {
+      "enabled": true,
+      "mode": "npx"
+    }
+  },
+  "verification": {
+    "commands": []
+  },
+  "changedFileFilters": {
+    "ignore": []
+  },
+  "privacy": {
+    "localOnly": true,
+    "telemetry": false
+  }
+}
