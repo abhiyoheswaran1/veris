@@ -5,3 +5,14 @@ dist
 .veris/cache
 .projscan-memory/
 .superpowers/
+
+# Baseframe dev-harness runtime output (committed templates/config stay tracked)
+.agentloop/reports/
+.agentloop/runs/
+.agentloop/state.json
+.agentloop/handoffs/[0-9]*
+.agentloop/tasks/[0-9]*
+.agentflight/current/
+.agentflight/reports/
+.agentflight/sessions/
+.agentflight/evidence/
