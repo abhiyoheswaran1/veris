@@ -25,12 +25,19 @@ export function renderRun(run: VerificationRun): string {
   const bold = (s: string) => (plain ? s : pc.bold(s));
   const dim = (s: string) => (plain ? s : pc.dim(s));
   const lines: string[] = [];
-  lines.push(bold("Veris"));
-  lines.push("");
-  lines.push(
-    `Project     ${run.project.root.split("/").pop() ?? run.project.root}`,
-  );
-  lines.push(`Risk        ${dim("—")}`);
+  const scoped = run.scope?.kind;
+  if (scoped) {
+    lines.push(bold(`Veris — ${scoped}`));
+    lines.push("");
+    lines.push(`Scope       ${run.scope?.changedCount ?? 0} changed file(s)`);
+  } else {
+    lines.push(bold("Veris"));
+    lines.push("");
+    lines.push(
+      `Project     ${run.project.root.split("/").pop() ?? run.project.root}`,
+    );
+    lines.push(`Risk        ${dim("—")}`);
+  }
   lines.push("");
   lines.push("Checks");
   for (const r of run.results) {
@@ -47,19 +54,25 @@ export function renderRun(run: VerificationRun): string {
   }
   lines.push("");
   lines.push("Result");
-  const verb =
+  const label =
     run.verdict.state === "verified"
-      ? plain
-        ? "✓ Verified"
-        : pc.green("✓ Verified")
+      ? scoped
+        ? "✓ Affected checks passed"
+        : "✓ Verified"
       : run.verdict.state === "failed"
-        ? plain
-          ? "✗ Failed"
-          : pc.red("✗ Failed")
-        : plain
-          ? "▲ Partial"
-          : pc.yellow("▲ Partial");
-  lines.push(`  ${verb}`);
+        ? scoped
+          ? "✗ Affected checks failed"
+          : "✗ Failed"
+        : scoped
+          ? "▲ Affected: partial"
+          : "▲ Partial";
+  const color =
+    run.verdict.state === "verified"
+      ? pc.green
+      : run.verdict.state === "failed"
+        ? pc.red
+        : pc.yellow;
+  lines.push(`  ${plain ? label : color(label)}`);
   if (run.reportRef) {
     lines.push("");
     lines.push("Report");

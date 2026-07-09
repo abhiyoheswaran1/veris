@@ -15,6 +15,12 @@ export function renderMarkdown(run: VerificationRun): string {
   const root = run.project.root;
   const lines: string[] = [];
   lines.push("# Veris Verification Report");
+  if (run.scope?.kind) {
+    lines.push("");
+    lines.push(
+      `> **Scope:** ${run.scope.kind} — ${run.scope.changedCount} changed file(s). Only affected checks ran; this is not a full verification.`,
+    );
+  }
   lines.push("");
   lines.push(`**Verdict:** ${STATE_LABEL[run.verdict.state]}`);
   lines.push(`**When:** ${run.startedAt}`);

@@ -64,3 +64,53 @@ describe("renderRun", () => {
     expect(out).toContain("expected 1 to be 2");
   });
 });
+
+describe("renderRun — affected scope", () => {
+  it("uses affected wording and shows a not-affected check", () => {
+    const run = {
+      id: "a",
+      startedAt: "2026-07-09T00:00:00.000Z",
+      project: {
+        root: "/x",
+        packageManager: "npm",
+        frameworks: [],
+        languages: [],
+        scripts: [],
+        capabilities: [],
+      },
+      results: [
+        {
+          checkId: "types",
+          status: "passed",
+          durationMs: 300,
+          summary: "no type errors",
+        },
+        {
+          checkId: "lint",
+          status: "skipped",
+          durationMs: 0,
+          summary: "not affected by changes",
+        },
+      ],
+      verdict: {
+        state: "verified",
+        verifiedCapabilities: ["types"],
+        skipped: [],
+        reasons: [],
+      },
+      env: {
+        os: "darwin",
+        node: "v26",
+        pm: "npm",
+        ci: false,
+        timestamp: "2026-07-09T00:00:00.000Z",
+      },
+      scope: { kind: "affected", changedCount: 2 },
+    } as unknown as import("../core/model.js").VerificationRun;
+    const out = renderRun(run);
+    expect(out.toLowerCase()).toContain("affected");
+    expect(out).toContain("2 changed");
+    expect(out).toContain("not affected by changes");
+    expect(out).not.toContain("✓ Verified"); // scoped wording, not bare Verified
+  });
+});

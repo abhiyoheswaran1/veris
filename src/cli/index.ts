@@ -45,6 +45,18 @@ export function buildCli() {
       process.exitCode = await runReport(process.cwd());
     });
 
+  cli
+    .command("affected", "Run only the checks affected by changed files")
+    .option("--base <ref>", "Compare against a git ref instead of HEAD")
+    .option("--partial-ok", "Exit 0 even when the verdict is partial")
+    .action(async (opts: { base?: string; partialOk?: boolean }) => {
+      const { runAffected } = await import("./commands/affected.js");
+      process.exitCode = await runAffected(process.cwd(), {
+        base: opts.base,
+        partialOk: opts.partialOk,
+      });
+    });
+
   return { raw: cli, version: VERSION };
 }
 

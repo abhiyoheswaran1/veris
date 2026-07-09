@@ -60,4 +60,5 @@ export interface VerificationRun {
   verdict: Verdict;
   reportRef?: string;
   env: EnvironmentInfo;
+  scope?: { kind: "affected" | "watch"; changedCount: number };
 }
