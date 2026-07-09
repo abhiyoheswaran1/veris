@@ -1,5 +1,5 @@
 {
-  "name": "veris",
+  "name": "veriskit",
   "version": "0.2.0",
   "description": "The fastest way to prove your software works — a zero-config verification CLI.",
   "scripts": {

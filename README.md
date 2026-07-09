@@ -10,14 +10,17 @@ report. No config to write, no new test framework to learn.
 ## Install
 
 ```bash
-npx veris init
+npx veriskit init
 ```
 
 Or add it to a project:
 
 ```bash
-npm install --save-dev veris
+npm install --save-dev veriskit
 ```
+
+> Published on npm as **`veriskit`** (the bare name `veris` was too similar to an
+> existing package). The installed command is still **`veris`**.
 
 ## Quickstart
 
