@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest";
+import type { Capability, CheckResult, Project } from "../../core/model.js";
+import { buildWatchResults } from "./watch.js";
+
+const project = {
+  root: "/x",
+  packageManager: "npm",
+  frameworks: [],
+  languages: [],
+  scripts: {},
+  capabilities: (["types", "lint", "unit"] as const).map((id) => ({
+    id,
+    available: true,
+  })) as Capability[],
+} as Project;
+
+describe("buildWatchResults", () => {
+  it("returns fresh results for affected and cached for the rest", () => {
+    const fresh: CheckResult[] = [
+      {
+        checkId: "unit",
+        status: "passed",
+        durationMs: 1200,
+        summary: "unit tests passed",
+      },
+    ];
+    const cache = new Map<string, CheckResult>([
+      [
+        "types",
+        {
+          checkId: "types",
+          status: "passed",
+          durationMs: 300,
+          summary: "no type errors",
+        },
+      ],
+    ]);
+    const out = buildWatchResults(project, ["unit"], fresh, cache);
+    const byId = Object.fromEntries(out.map((r) => [r.checkId, r]));
+    expect(byId.unit?.cached).toBeFalsy();
+    expect(byId.types?.cached).toBe(true);
+    // lint has neither fresh nor cache → shown as skipped "not affected"
+    expect(byId.lint?.status).toBe("skipped");
+    expect(byId.lint?.summary).toContain("not affected");
+  });
+});

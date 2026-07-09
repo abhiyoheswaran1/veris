@@ -57,6 +57,14 @@ export function buildCli() {
       });
     });
 
+  cli
+    .command("watch", "Re-run affected checks as files change (Ctrl-C to stop)")
+    .option("--poll", "Use mtime polling instead of native fs.watch")
+    .action(async (opts: { poll?: boolean }) => {
+      const { runWatch } = await import("./commands/watch.js");
+      process.exitCode = await runWatch(process.cwd(), { poll: opts.poll });
+    });
+
   return { raw: cli, version: VERSION };
 }
 

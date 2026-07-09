@@ -35,6 +35,7 @@ export interface CheckResult {
   logRef?: string;
   outputTail?: string;
   counts?: { passed?: number; failed?: number; total?: number };
+  cached?: boolean;
 }
 
 export interface Verdict {

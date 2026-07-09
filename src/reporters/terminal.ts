@@ -44,8 +44,11 @@ export function renderRun(run: VerificationRun): string {
     const detail =
       r.status === "skipped"
         ? dim(`skipped — ${r.summary}`)
-        : secs(r.durationMs);
-    lines.push(`  ${glyph(r.status, plain)} ${r.checkId.padEnd(14)} ${detail}`);
+        : r.cached
+          ? dim(`cached · ${secs(r.durationMs) || "—"}`)
+          : secs(r.durationMs);
+    const g = r.cached ? (plain ? "⟳" : dim("⟳")) : glyph(r.status, plain);
+    lines.push(`  ${g} ${r.checkId.padEnd(14)} ${detail}`);
     if (r.outputTail) {
       for (const tail of r.outputTail.split("\n")) {
         lines.push(dim(`    ${tail}`));
