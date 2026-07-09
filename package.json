@@ -1,6 +1,6 @@
 {
   "name": "veris",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The fastest way to prove your software works — a zero-config verification CLI.",
   "scripts": {
     "test": "vitest run",
