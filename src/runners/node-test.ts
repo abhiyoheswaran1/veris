@@ -1,6 +1,6 @@
 import type { Capability, Check, CheckResult, Project } from "../core/model.js";
-import type { RunContext, Runner } from "./index.js";
-import { runViaExec } from "./index.js";
+import type { RunContext, Runner } from "./base.js";
+import { runViaExec } from "./base.js";
 
 export const nodeTestRunner: Runner = {
   id: "node-test",

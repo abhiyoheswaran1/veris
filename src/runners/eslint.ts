@@ -1,5 +1,5 @@
 import type { Capability, Check, CheckResult, Project } from "../core/model.js";
-import { localBin, type RunContext, type Runner, runViaExec } from "./index.js";
+import { localBin, type RunContext, type Runner, runViaExec } from "./base.js";
 
 export const eslintRunner: Runner = {
   id: "eslint",
