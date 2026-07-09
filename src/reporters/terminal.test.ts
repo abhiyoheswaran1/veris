@@ -65,6 +65,36 @@ describe("renderRun", () => {
   });
 });
 
+describe("renderRun — cached results", () => {
+  it("does not hide a cached failure behind a neutral glyph", () => {
+    const cachedFailRun = {
+      ...run,
+      // overall verdict is "verified" so any ✗ found is unambiguously from
+      // the per-check glyph, not the top-level verdict label
+      verdict: {
+        state: "verified",
+        verifiedCapabilities: ["types"],
+        skipped: [],
+        reasons: [],
+      },
+      results: [
+        {
+          checkId: "types",
+          status: "failed",
+          durationMs: 300,
+          summary: "no type errors",
+          cached: true,
+        },
+      ],
+    } as unknown as VerificationRun;
+    const out = renderRun(cachedFailRun);
+    const checkLine = out.split("\n").find((line) => line.includes("types"));
+    expect(checkLine).toBeDefined();
+    expect(checkLine).toContain("✗");
+    expect(checkLine?.toLowerCase()).toContain("cached");
+  });
+});
+
 describe("renderRun — affected scope", () => {
   it("uses affected wording and shows a not-affected check", () => {
     const run = {

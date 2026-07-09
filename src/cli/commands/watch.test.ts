@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Capability, CheckResult, Project } from "../../core/model.js";
+import { computeVerdict } from "../../core/verdict.js";
 import { buildWatchResults } from "./watch.js";
 
 const project = {
@@ -42,5 +43,42 @@ describe("buildWatchResults", () => {
     // lint has neither fresh nor cache → shown as skipped "not affected"
     expect(byId.lint?.status).toBe("skipped");
     expect(byId.lint?.summary).toContain("not affected");
+  });
+});
+
+describe("watch tick verdict", () => {
+  it("keeps the verdict failed when a cached check is still broken, even though this tick's affected checks passed", () => {
+    const twoCapProject = {
+      ...project,
+      capabilities: (["types", "unit"] as const).map((id) => ({
+        id,
+        available: true,
+      })) as Capability[],
+    } as Project;
+    const fresh: CheckResult[] = [
+      {
+        checkId: "unit",
+        status: "passed",
+        durationMs: 500,
+        summary: "unit tests passed",
+      },
+    ];
+    const cache = new Map<string, CheckResult>([
+      [
+        "types",
+        {
+          checkId: "types",
+          status: "failed",
+          durationMs: 300,
+          summary: "type error in src/a.ts",
+        },
+      ],
+    ]);
+    const results = buildWatchResults(twoCapProject, ["unit"], fresh, cache);
+    const availableCaps = twoCapProject.capabilities.filter(
+      (c) => c.available && c.id !== "browser",
+    );
+    const verdict = computeVerdict(results, availableCaps);
+    expect(verdict.state).toBe("failed");
   });
 });

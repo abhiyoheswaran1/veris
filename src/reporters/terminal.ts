@@ -41,13 +41,13 @@ export function renderRun(run: VerificationRun): string {
   lines.push("");
   lines.push("Checks");
   for (const r of run.results) {
+    const g = glyph(r.status, plain); // always reflect the real status — cached failures stay ✗
     const detail =
       r.status === "skipped"
         ? dim(`skipped — ${r.summary}`)
         : r.cached
-          ? dim(`cached · ${secs(r.durationMs) || "—"}`)
+          ? dim(`⟳ cached · ${secs(r.durationMs) || "—"}`)
           : secs(r.durationMs);
-    const g = r.cached ? (plain ? "⟳" : dim("⟳")) : glyph(r.status, plain);
     lines.push(`  ${g} ${r.checkId.padEnd(14)} ${detail}`);
     if (r.outputTail) {
       for (const tail of r.outputTail.split("\n")) {

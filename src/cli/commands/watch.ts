@@ -2,6 +2,7 @@ import { affectedChecks } from "../../affected/gate.js";
 import { detectProject } from "../../config/detect.js";
 import type { CapabilityId, CheckResult, Project } from "../../core/model.js";
 import { runChecks } from "../../core/orchestrator.js";
+import { computeVerdict } from "../../core/verdict.js";
 import { changedFiles } from "../../git/changes.js";
 import { renderRun } from "../../reporters/terminal.js";
 import { watch } from "../../watch/watcher.js";
@@ -61,24 +62,22 @@ export async function runWatch(
         ? availableIds(project)
         : affectedChecks(files, project).checks;
       let fresh: CheckResult[] = [];
-      let verdictRun = null as Awaited<ReturnType<typeof runChecks>> | null;
       if (checks.length) {
-        verdictRun = await runChecks(project, checks, root);
-        fresh = verdictRun.results;
-        for (const r of fresh) cache.set(r.checkId, { ...r });
+        const r = await runChecks(project, checks, root);
+        fresh = r.results;
+        for (const result of fresh) cache.set(result.checkId, { ...result });
       }
       const results = buildWatchResults(project, checks, fresh, cache);
+      const availableCaps = project.capabilities.filter(
+        (c) => c.available && c.id !== "browser",
+      );
+      const verdict = computeVerdict(results, availableCaps);
       const run = {
         id: "watch",
         startedAt: new Date().toISOString(),
         project,
         results,
-        verdict: verdictRun?.verdict ?? {
-          state: "verified" as const,
-          verifiedCapabilities: [],
-          skipped: [],
-          reasons: [],
-        },
+        verdict,
         env: {
           os: process.platform,
           node: process.version,
