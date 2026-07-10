@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 // type-only namespace import — erased at build, so `typescript` NEVER enters
 // the runtime bundle; the real module is loaded dynamically from the project.
 import type * as ts from "typescript";
@@ -12,12 +12,30 @@ export interface ResolverChoice {
   importsOf: (file: string) => string[];
 }
 
+// A TS 7.x native (Go-ported) package loads fine but has none of the classic
+// JS compiler API — preProcessFile/resolveModuleName/readConfigFile/sys are
+// all absent. Guard against that so we degrade to the scanner instead of
+// crashing with an uncaught TypeError deep in loadCompilerOptions/tsImports.
+export function hasClassicApi(mod: unknown): mod is typeof ts {
+  const m = mod as Record<string, unknown> | null;
+  return (
+    !!m &&
+    typeof m.preProcessFile === "function" &&
+    typeof m.resolveModuleName === "function" &&
+    typeof m.readConfigFile === "function" &&
+    typeof m.parseJsonConfigFileContent === "function" &&
+    typeof m.sys === "object" &&
+    m.sys !== null
+  );
+}
+
 export function loadTypeScript(root: string): typeof ts | null {
   try {
     const require = createRequire(join(root, "__veris__.js"));
     // resolve the project's own typescript; require it (typescript is CJS)
     const tsPath = require.resolve("typescript");
-    return require(tsPath) as typeof ts;
+    const mod = require(tsPath) as unknown;
+    return hasClassicApi(mod) ? mod : null; // 7.x native package → null → scanner
   } catch {
     return null;
   }
@@ -55,7 +73,7 @@ export function tsImports(
     if (
       resolved &&
       !resolved.includes("node_modules") &&
-      resolved.startsWith(root)
+      resolved.startsWith(root + sep)
     ) {
       out.add(toPosix(relative(root, resolved)));
     }
@@ -68,11 +86,16 @@ export function selectResolver(root: string): ResolverChoice {
     ? loadTypeScript(root)
     : null;
   if (tsmod) {
-    const options = loadCompilerOptions(tsmod, root);
-    return {
-      resolver: "typescript",
-      importsOf: (file) => tsImports(tsmod, root, options, file),
-    };
+    try {
+      const options = loadCompilerOptions(tsmod, root);
+      return {
+        resolver: "typescript",
+        importsOf: (file) => tsImports(tsmod, root, options, file),
+      };
+    } catch {
+      // any failure loading config/setting up the TS resolver degrades to
+      // the scanner rather than propagating and crashing the command.
+    }
   }
   return {
     resolver: "scanner",
