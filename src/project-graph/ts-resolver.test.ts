@@ -1,0 +1,23 @@
+import { describe, expect, it } from "vitest";
+import { loadTypeScript, selectResolver } from "./ts-resolver.js";
+
+describe("ts-resolver", () => {
+  it("loads the project's own typescript from the repo root", () => {
+    const ts = loadTypeScript(process.cwd());
+    expect(ts).not.toBeNull();
+    expect(typeof ts?.preProcessFile).toBe("function");
+  });
+
+  it("selects the typescript resolver for a repo that has TS + tsconfig", () => {
+    const choice = selectResolver(process.cwd());
+    expect(choice.resolver).toBe("typescript");
+    // resolve this very file's imports — should include a real intra-repo path
+    const imps = choice.importsOf("src/project-graph/graph.ts");
+    expect(imps.some((i) => i.startsWith("src/project-graph/"))).toBe(true);
+  });
+
+  it("falls back to the scanner when a dir has no tsconfig", () => {
+    const choice = selectResolver("/nonexistent-veris-root");
+    expect(choice.resolver).toBe("scanner");
+  });
+});
