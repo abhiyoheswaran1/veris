@@ -12,6 +12,7 @@ export interface Capability {
 
 export interface Project {
   root: string;
+  name?: string;
   packageManager: PackageManager;
   frameworks: string[];
   languages: string[];

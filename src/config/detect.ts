@@ -4,6 +4,7 @@ import type { Capability, PackageManager, Project } from "../core/model.js";
 import { readJsonIfExists } from "../util/fs-safe.js";
 
 interface PkgJson {
+  name?: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   scripts?: Record<string, string>;
@@ -37,6 +38,7 @@ export async function detectProject(root: string): Promise<Project> {
 
   return {
     root,
+    name: pkg.name ?? undefined,
     packageManager: detectPackageManager(root),
     frameworks,
     languages,

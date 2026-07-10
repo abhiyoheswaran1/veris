@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { canonicalize, computeDigest, sha256 } from "./record.js";
+import type { VerificationRun } from "../core/model.js";
+import {
+  buildRecord,
+  canonicalize,
+  computeDigest,
+  sha256,
+} from "./record.js";
 
 describe("canonicalize", () => {
   it("sorts object keys recursively and drops whitespace", () => {
@@ -37,5 +43,76 @@ describe("computeDigest", () => {
 
   it("changes when any real field changes", () => {
     expect(computeDigest({ value: 1 })).not.toBe(computeDigest({ value: 2 }));
+  });
+});
+
+function sampleRun(): VerificationRun {
+  return {
+    id: "2026-07-10T00-00-00-000Z-1",
+    startedAt: "2026-07-10T00:00:00.000Z",
+    project: {
+      root: "/tmp/demo",
+      name: "demo-pkg",
+      packageManager: "npm",
+      frameworks: [],
+      languages: ["ts"],
+      scripts: {},
+      capabilities: [
+        { id: "unit", available: true, runner: "vitest" },
+        { id: "types", available: true, runner: "tsc" },
+      ],
+    },
+    results: [
+      {
+        checkId: "unit",
+        status: "passed",
+        durationMs: 1200,
+        summary: "5 passed",
+        counts: { passed: 5, total: 5 },
+        logRef: "/tmp/demo/.veris/runs/x/unit.log",
+      },
+    ],
+    verdict: {
+      state: "verified",
+      verifiedCapabilities: ["unit", "types"],
+      skipped: [],
+      reasons: [],
+    },
+    env: {
+      os: "darwin",
+      node: "v24.0.0",
+      pm: "npm",
+      ci: false,
+      timestamp: "2026-07-10T00:00:00.000Z",
+    },
+  };
+}
+
+describe("buildRecord", () => {
+  it("produces a self-consistent digest that reverifies", () => {
+    const rec = buildRecord(sampleRun(), null, {}, "0.4.0");
+    expect(rec.schema).toBe("veriskit/evidence@1");
+    expect(rec.digest).toBe(
+      computeDigest(rec as unknown as Record<string, unknown>),
+    );
+  });
+
+  it("maps runner from capabilities and keeps the log digest", () => {
+    const rec = buildRecord(
+      sampleRun(),
+      null,
+      { unit: "sha256:deadbeef" },
+      "0.4.0",
+    );
+    const unit = rec.checks.find((c) => c.id === "unit");
+    expect(unit?.runner).toBe("vitest");
+    expect(unit?.logDigest).toBe("sha256:deadbeef");
+    expect(rec.project.name).toBe("demo-pkg");
+  });
+
+  it("defaults scope to full and never leaks absolute paths", () => {
+    const rec = buildRecord(sampleRun(), null, {}, "0.4.0");
+    expect(rec.scope).toEqual({ kind: "full", changedCount: 0 });
+    expect(JSON.stringify(rec)).not.toContain("/tmp/demo");
   });
 });
