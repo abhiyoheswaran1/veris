@@ -1,6 +1,7 @@
 import pc from "picocolors";
 import { isPlain } from "../cli/tty.js";
 import type { CheckResult, VerificationRun } from "../core/model.js";
+import type { EvidenceRecord } from "../evidence/record.js";
 
 function glyph(status: CheckResult["status"], plain: boolean): string {
   const map: Record<CheckResult["status"], string> = {
@@ -20,7 +21,10 @@ function secs(ms: number): string {
   return ms === 0 ? "" : `${(ms / 1000).toFixed(1)}s`;
 }
 
-export function renderRun(run: VerificationRun): string {
+export function renderRun(
+  run: VerificationRun,
+  record?: EvidenceRecord,
+): string {
   const plain = isPlain();
   const bold = (s: string) => (plain ? s : pc.bold(s));
   const dim = (s: string) => (plain ? s : pc.dim(s));
@@ -76,6 +80,13 @@ export function renderRun(run: VerificationRun): string {
         ? pc.red
         : pc.yellow;
   lines.push(`  ${plain ? label : color(label)}`);
+  if (record?.git) {
+    const g = record.git;
+    lines.push("");
+    lines.push(
+      `Commit      ${g.commit.slice(0, 7)} ${g.dirty ? "· tree dirty" : "· tree clean"}`,
+    );
+  }
   if (run.reportRef) {
     lines.push("");
     lines.push("Report");

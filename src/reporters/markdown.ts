@@ -1,5 +1,6 @@
 import { relative } from "node:path";
 import type { VerificationRun } from "../core/model.js";
+import type { EvidenceRecord } from "../evidence/record.js";
 
 const STATE_LABEL = {
   verified: "Verified",
@@ -11,7 +12,10 @@ function cell(value: string): string {
   return value.replace(/\|/g, "\\|");
 }
 
-export function renderMarkdown(run: VerificationRun): string {
+export function renderMarkdown(
+  run: VerificationRun,
+  record?: EvidenceRecord,
+): string {
   const root = run.project.root;
   const lines: string[] = [];
   lines.push("# VerisKit Verification Report");
@@ -27,6 +31,15 @@ export function renderMarkdown(run: VerificationRun): string {
   lines.push(
     `**Node:** ${run.env.node} · **OS:** ${run.env.os} · **PM:** ${run.env.pm} · **CI:** ${run.env.ci}`,
   );
+  if (record?.git) {
+    const g = record.git;
+    const tree = g.dirty
+      ? `tree dirty, ${g.changedFiles} uncommitted file(s)`
+      : "tree clean";
+    lines.push(`**Commit:** ${g.commit.slice(0, 7)} (${g.branch}) · ${tree}`);
+  } else if (record) {
+    lines.push("**Commit:** no git anchor available");
+  }
   lines.push("");
   lines.push("## Checks");
   lines.push("");
@@ -57,6 +70,13 @@ export function renderMarkdown(run: VerificationRun): string {
       lines.push(r.outputTail ?? "");
       lines.push("```");
     }
+  }
+  if (record) {
+    lines.push("");
+    lines.push(`**Evidence digest:** \`${record.digest}\``);
+    lines.push(
+      "_Integrity digest over the canonical record. Detects edits and corruption; it is not forgery-proof on its own. Publish the digest separately or sign it to prove authorship._",
+    );
   }
   lines.push("");
   lines.push(

@@ -30,11 +30,15 @@ export async function runVerify(
   const logDigests = await digestLogs(run);
   const record = buildRecord(run, git, logDigests, VERSION);
 
-  const reportRef = await writeReport(root, run.id, renderMarkdown(run));
+  const reportRef = await writeReport(
+    root,
+    run.id,
+    renderMarkdown(run, record),
+  );
   run.reportRef = reportRef;
   const runDir = await createRunDir(root, run.id);
   await writeEvidence(runDir, record);
 
-  process.stdout.write(`${renderRun(run)}\n`);
+  process.stdout.write(`${renderRun(run, record)}\n`);
   return verdictExitCode(run.verdict, opts);
 }

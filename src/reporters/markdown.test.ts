@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
+import { buildRecord } from "../evidence/record.js";
 import { renderMarkdown } from "./markdown.js";
 
 const run: VerificationRun = {
@@ -75,5 +76,25 @@ describe("renderMarkdown", () => {
     expect(md).toContain("## Failure output");
     expect(md).toContain("### unit");
     expect(md).toContain("expected 1 to be 2");
+  });
+
+  it("renders the git anchor and evidence digest when a record is given", () => {
+    const record = buildRecord(
+      run,
+      {
+        commit: "4fa33a9aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        branch: "main",
+        dirty: false,
+        changedFiles: 0,
+      },
+      {},
+      "0.4.0",
+    );
+    const md = renderMarkdown(run, record);
+    expect(md).toContain("**Commit:** 4fa33a9 (main)");
+    expect(md).toContain("tree clean");
+    expect(md).toContain(record.digest);
+    expect(md).toContain("Integrity digest");
+    expect(md).toContain("not forgery-proof");
   });
 });
