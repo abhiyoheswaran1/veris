@@ -34,3 +34,32 @@ export async function changedFiles(
 
   return { files: [...files].sort(), base };
 }
+
+export interface GitAnchor {
+  commit: string;
+  branch: string;
+  dirty: boolean;
+  changedFiles: number;
+}
+
+export async function gitAnchor(root: string): Promise<GitAnchor | null> {
+  const head = await exec("git", ["rev-parse", "HEAD"], { cwd: root });
+  if (head.code !== 0) return null; // not a repo, or no commits yet
+  const commit = head.stdout.trim();
+
+  const branchRes = await exec("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    cwd: root,
+  });
+  const branch = branchRes.code === 0 ? branchRes.stdout.trim() : "HEAD";
+
+  const status = await exec("git", ["status", "--porcelain"], { cwd: root });
+  const lines =
+    status.code === 0
+      ? status.stdout
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+      : [];
+
+  return { commit, branch, dirty: lines.length > 0, changedFiles: lines.length };
+}

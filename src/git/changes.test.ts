@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { changedFiles } from "./changes.js";
+import { changedFiles, gitAnchor } from "./changes.js";
 
 function initRepo(): string {
   const dir = mkdtempSync(join(tmpdir(), "veris-git-"));
@@ -37,5 +37,29 @@ describe("changedFiles", () => {
     const dir = initRepo();
     const cs = await changedFiles(dir);
     expect(cs.files).toEqual([]);
+  });
+});
+
+describe("gitAnchor", () => {
+  it("records a clean tree with commit and branch", async () => {
+    const dir = initRepo();
+    const anchor = await gitAnchor(dir);
+    expect(anchor).not.toBeNull();
+    expect(anchor?.commit).toMatch(/^[0-9a-f]{40}$/);
+    expect(anchor?.dirty).toBe(false);
+    expect(anchor?.changedFiles).toBe(0);
+  });
+
+  it("records a dirty tree with the changed-file count", async () => {
+    const dir = initRepo();
+    writeFileSync(join(dir, "a.ts"), "export const a = 2;\n");
+    const anchor = await gitAnchor(dir);
+    expect(anchor?.dirty).toBe(true);
+    expect(anchor?.changedFiles).toBe(1);
+  });
+
+  it("returns null outside a git repo", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-nogit-"));
+    expect(await gitAnchor(dir)).toBeNull();
   });
 });
