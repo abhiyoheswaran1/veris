@@ -28,11 +28,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # Node 24's bundled npm (>= 11.5) supports OIDC trusted publishing and
+          # ships an intact `sigstore` for --provenance. Do NOT `npm install -g
+          # npm@latest` — a global reinstall leaves npm's bundled deps (sigstore)
+          # incomplete and breaks provenance.
+          node-version: 24
           registry-url: https://registry.npmjs.org
-
-      # Trusted publishing (OIDC) requires npm >= 11.5.1
-      - run: npm install -g npm@latest
 
       - run: npm ci
 
