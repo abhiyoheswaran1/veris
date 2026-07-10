@@ -86,14 +86,24 @@ export function buildCli() {
   cli
     .command(
       "evidence <action> [file]",
-      "Evidence tools: verify <file> | bundle | show [file]",
+      "Evidence: verify <file> | bundle | show [file] | keygen | sign <file>",
     )
-    .option("--out <file>", "For bundle: write to a specific path")
+    .option("--out <file>", "For bundle/keygen/sign: output path")
+    .option("--key <file>", "For sign: the private signing key (PEM)")
+    .option("--pubkey <file>", "For verify: assert the signer's public key")
+    .option("--key-id <id>", "For verify: assert the signer's key id")
+    .option("--sig <file>", "For verify: signature path (default <file>.sig)")
     .action(
       async (
         action: string,
         file: string | undefined,
-        opts: { out?: string },
+        opts: {
+          out?: string;
+          key?: string;
+          pubkey?: string;
+          keyId?: string;
+          sig?: string;
+        },
       ) => {
         const mod = await import("./commands/evidence.js");
         if (action === "verify") {
@@ -102,16 +112,34 @@ export function buildCli() {
             process.exitCode = 1;
             return;
           }
-          process.exitCode = await mod.runEvidenceVerify(file);
+          process.exitCode = await mod.runEvidenceVerify(file, {
+            pubkey: opts.pubkey,
+            keyId: opts.keyId,
+            sig: opts.sig,
+          });
         } else if (action === "bundle") {
           process.exitCode = await mod.runEvidenceBundle(process.cwd(), {
             out: opts.out,
           });
         } else if (action === "show") {
           process.exitCode = await mod.runEvidenceShow(process.cwd(), file);
+        } else if (action === "keygen") {
+          process.exitCode = await mod.runEvidenceKeygen(process.cwd(), {
+            out: opts.out,
+          });
+        } else if (action === "sign") {
+          if (!file) {
+            process.stderr.write("veris: evidence sign needs a <file>\n");
+            process.exitCode = 1;
+            return;
+          }
+          process.exitCode = await mod.runEvidenceSign(file, {
+            key: opts.key,
+            out: opts.out,
+          });
         } else {
           process.stderr.write(
-            `veris: unknown evidence action '${action}' (use verify | bundle | show)\n`,
+            `veris: unknown evidence action '${action}' (use verify | bundle | show | keygen | sign)\n`,
           );
           process.exitCode = 1;
         }

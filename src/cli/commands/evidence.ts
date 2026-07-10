@@ -1,9 +1,12 @@
-import { readFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import pc from "picocolors";
 import { buildBundle } from "../../evidence/bundle.js";
 import type { EvidenceRecord } from "../../evidence/record.js";
+import { computeDigest } from "../../evidence/record.js";
+import type { Signature } from "../../evidence/signing.js";
+import { generateKeyPair, signDigest } from "../../evidence/signing.js";
 import {
   ensureEvidenceDir,
   latestRunDir,
@@ -16,10 +19,27 @@ const HONESTY =
   "An integrity digest confirms the record was not edited or corrupted since it was written.\n" +
   "It is not forgery-proof on its own: publish the digest separately (CI log, PR) or sign it (planned) to prove authorship.";
 
-export async function runEvidenceVerify(path: string): Promise<number> {
+export async function runEvidenceVerify(
+  path: string,
+  opts: { pubkey?: string; keyId?: string; sig?: string } = {},
+): Promise<number> {
+  let expectedPubKeyPem: string | undefined;
+  if (opts.pubkey) {
+    try {
+      expectedPubKeyPem = readFileSync(opts.pubkey, "utf8");
+    } catch {
+      process.stderr.write(`veris: cannot read public key at ${opts.pubkey}\n`);
+      return 1;
+    }
+  }
+
   let result: Awaited<ReturnType<typeof verifyEvidenceFile>>;
   try {
-    result = await verifyEvidenceFile(path);
+    result = await verifyEvidenceFile(path, {
+      sigPath: opts.sig,
+      expectedKeyId: opts.keyId,
+      expectedPubKeyPem,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`veris: cannot read evidence at ${path}: ${msg}\n`);
@@ -44,7 +64,99 @@ export async function runEvidenceVerify(path: string): Promise<number> {
     `\n${result.ok ? "digest OK" : "TAMPERED"} · verdict ${result.record.verdict.state} · ${anchor}\n`,
   );
   process.stdout.write(`\n${HONESTY}\n`);
+  if (result.signed && !opts.pubkey && !opts.keyId) {
+    process.stdout.write(
+      "\nThis record is signed. Confirm you trust the signing key by comparing its\nkey id above to one you already trust, or re-run with --pubkey / --key-id.\n",
+    );
+  }
   return result.ok ? 0 : 1;
+}
+
+export async function runEvidenceKeygen(
+  root: string,
+  opts: { out?: string } = {},
+): Promise<number> {
+  const out = opts.out ?? join(root, ".veris", "keys", "veriskit-signing.key");
+  const pub = `${out}.pub`;
+  if (existsSync(out) || existsSync(pub)) {
+    process.stderr.write(
+      `veris: a key already exists at ${out}. Refusing to overwrite it.\n`,
+    );
+    return 1;
+  }
+  const { mkdir } = await import("node:fs/promises");
+  await mkdir(dirname(out), { recursive: true });
+
+  const kp = generateKeyPair();
+  writeFileSync(out, kp.privateKeyPem, { mode: 0o600 });
+  chmodSync(out, 0o600);
+  writeFileSync(pub, kp.publicKeyPem, "utf8");
+
+  process.stdout.write(
+    [
+      `Wrote signing key ${out} (keep this secret; do not commit it)`,
+      `Wrote public key ${pub}`,
+      `Key id ${kp.keyId}`,
+      "",
+    ].join("\n"),
+  );
+  return 0;
+}
+
+export async function runEvidenceSign(
+  evidencePath: string,
+  opts: { key?: string; out?: string } = {},
+): Promise<number> {
+  let privateKeyPem: string;
+  if (process.env.VERISKIT_SIGNING_KEY) {
+    privateKeyPem = process.env.VERISKIT_SIGNING_KEY;
+  } else if (opts.key) {
+    try {
+      privateKeyPem = readFileSync(opts.key, "utf8");
+    } catch {
+      process.stderr.write(`veris: cannot read signing key at ${opts.key}\n`);
+      return 1;
+    }
+  } else {
+    process.stderr.write(
+      "veris: no signing key. Pass --key <path> or set VERISKIT_SIGNING_KEY.\n",
+    );
+    return 1;
+  }
+
+  let record: EvidenceRecord;
+  try {
+    record = JSON.parse(readFileSync(evidencePath, "utf8")) as EvidenceRecord;
+  } catch {
+    process.stderr.write(`veris: cannot read evidence at ${evidencePath}\n`);
+    return 1;
+  }
+
+  const recomputed = computeDigest(
+    record as unknown as Record<string, unknown>,
+  );
+  if (recomputed !== record.digest) {
+    process.stderr.write(
+      "veris: refusing to sign, the record digest does not match its contents.\n",
+    );
+    return 1;
+  }
+
+  let sig: ReturnType<typeof signDigest>;
+  try {
+    sig = signDigest(record.digest, privateKeyPem);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`veris: signing failed: ${msg}\n`);
+    return 1;
+  }
+
+  const out = opts.out ?? `${evidencePath}.sig`;
+  writeFileSync(out, `${JSON.stringify(sig, null, 2)}\n`, "utf8");
+  process.stdout.write(
+    `Signed ${evidencePath}\nWrote ${out} (key ${sig.keyId})\n`,
+  );
+  return 0;
 }
 
 export async function runEvidenceBundle(
@@ -81,7 +193,17 @@ export async function runEvidenceBundle(
     .map((c) => c.id as string);
   const logs = await readRunLogs(runDir, logIds);
 
-  const bundle = buildBundle(record, report, logs);
+  let signature: Signature | undefined;
+  const sigPath = join(runDir, "evidence.json.sig");
+  if (existsSync(sigPath)) {
+    try {
+      signature = JSON.parse(readFileSync(sigPath, "utf8")) as Signature;
+    } catch {
+      // ignore an unreadable signature; bundle stays unsigned
+    }
+  }
+
+  const bundle = buildBundle(record, report, logs, signature);
   const outDir = await ensureEvidenceDir(root);
   const out = opts.out ?? join(outDir, `${record.id}.bundle.json`);
   await writeFile(out, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");

@@ -8,6 +8,7 @@ const GITIGNORE = [
   "cache/",
   "graph.json",
   "evidence/",
+  "keys/",
   "",
 ].join("\n");
 
