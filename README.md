@@ -128,8 +128,9 @@ have very different accuracy:
   native/Go-ported build that doesn't expose the classic compiler API veris
   needs. The scanner is a dependency-free, **relative-imports-only** reader:
   it follows `./foo` and `../bar/baz` but does not understand `tsconfig`
-  path aliases or dynamic/non-literal imports. On a project that relies on
-  aliases, this can miss real edges and undercount a file's blast radius.
+  path aliases or computed (non-string-literal) dynamic imports. On a
+  project that relies on aliases, this can miss real edges and undercount a
+  file's blast radius.
   `scan` says plainly when this fallback is active — it is never presented
   as equivalent to the TypeScript-accurate graph.
 
@@ -203,8 +204,9 @@ full test suite** rather than ever risk hiding an affected test:
 
 - any changed file matches a config/global pattern (`tsconfig*.json`,
   `package.json`, a `*.config.*` or `*.setup.*` file, biome/eslint config, …);
-- a changed file isn't resolved in the graph at all (outside the project
-  root, or the resolver couldn't parse it);
+- a changed file isn't a node in the import graph at all (e.g. it's under an
+  ignored directory like `node_modules` or `.veris`, or it's not a
+  recognized code extension);
 - no test file transitively reaches any of the changed files (an untested
   change).
 

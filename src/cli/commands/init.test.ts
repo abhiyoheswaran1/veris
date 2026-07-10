@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -11,6 +11,10 @@ describe("runInit", () => {
     expect(await runInit(dir)).toBe(0);
     expect(existsSync(join(dir, ".veris", "config.json"))).toBe(true);
     expect(existsSync(join(dir, ".veris", ".gitignore"))).toBe(true);
+    // graph.json is untracked build output from `veris scan` — it must be
+    // gitignored alongside runs/reports/cache so downstream repos stay clean.
+    const gitignore = readFileSync(join(dir, ".veris", ".gitignore"), "utf8");
+    expect(gitignore).toContain("graph.json");
     // second run must not throw or overwrite
     expect(await runInit(dir)).toBe(0);
   });
