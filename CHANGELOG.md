@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-07-10
+
+### Added
+- `veris scan` — import-graph map + untested areas, built from the project's own TypeScript (with a dep-free scanner fallback); writes `.veris/graph.json`.
+- `veris plan` — prioritized recommendations (high-impact untested files, weak verification, risky changes). Analysis only — no code generation.
+
+### Changed
+- `veris affected` / `veris watch` are now graph-based: the unit run is narrowed to only the test files that transitively import your changes, with a conservative full-suite fallback (config/global change, unresolved file, or untested change) so an affected test is never skipped. No new runtime dependencies.
+
 ## 0.2.0 — 2026-07-09
 
 ### Added

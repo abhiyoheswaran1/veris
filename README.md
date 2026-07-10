@@ -95,6 +95,77 @@ want partial results to pass CI can opt in explicitly with
 | failed   | `1`       | at least one check failed                  |
 | partial  | `2` (`0` with `--partial-ok`) | no failures, but something was skipped |
 
+## Project intelligence
+
+`veris scan` and `veris plan` map your codebase's import graph and turn it
+into recommendations — what to test, where verification is weak, and (with
+`--base`) which of your changes are risky. Both are **read-only analysis**;
+neither generates or writes any code.
+
+### `veris scan`
+
+```bash
+veris scan
+```
+
+`scan` discovers every source and test file in the project, builds an import
+graph between them, and reports the source files with the most dependents
+that no test transitively reaches ("untested, by impact"). It writes the
+graph to `.veris/graph.json` — a derived cache, rebuilt on every run and not
+meant to be committed.
+
+**`scan` always states which resolver built the graph**, because the two
+have very different accuracy:
+
+- **`typescript`** — used when the project has a `tsconfig.json` and its own
+  `typescript` package exposes the classic compiler API
+  (`preProcessFile`/`resolveModuleName`/`readConfigFile`/…). Veris loads
+  *your project's own* TypeScript at run time — **no new dependency is added
+  for this** — and resolves imports the way `tsc` would: `tsconfig` path
+  aliases, extension-mapped specifiers, index resolution, and so on.
+- **`scanner`** — the fallback when there's no TypeScript, no
+  `tsconfig.json`, or the installed `typescript` package is a 7.x
+  native/Go-ported build that doesn't expose the classic compiler API veris
+  needs. The scanner is a dependency-free, **relative-imports-only** reader:
+  it follows `./foo` and `../bar/baz` but does not understand `tsconfig`
+  path aliases or dynamic/non-literal imports. On a project that relies on
+  aliases, this can miss real edges and undercount a file's blast radius.
+  `scan` says plainly when this fallback is active — it is never presented
+  as equivalent to the TypeScript-accurate graph.
+
+### `veris plan`
+
+```bash
+veris plan               # recommendations from the current graph
+veris plan --base main   # also factor in changes vs another ref
+```
+
+`plan` reads the same graph and turns it into prioritized recommendations:
+
+- the highest-impact untested files to test first (most dependents, no test
+  reaches them);
+- gaps in your verification setup (e.g. no lint or type-check configured);
+- with `--base <ref>`, which files that changed since that ref are "risky" —
+  high blast radius and either untested or actually changed.
+
+**`plan` only recommends — it never generates or writes any code.** Test
+generation is a separate, later goal (v0.8), not something v0.3 does.
+
+### What's still deferred
+
+- **No framework route/endpoint detection.** The graph understands imports
+  only; it doesn't know a file is an Express route, a Next.js page, or an
+  API handler, so it can't flag "this endpoint has no test" the way it flags
+  "this module has no test." Planned as a v0.3.x follow-up, not v0.3.0.
+- **No test generation.** `plan` recommends what to test; it does not write
+  test files. That's v0.8.
+- **Single tsconfig, single root.** Monorepos with multiple `tsconfig.json`
+  files aren't modeled yet — resolution runs against the root project only.
+- **Plain JS / TS 7.x-native projects degrade to the scanner.** There's no
+  new dependency added to compensate — the classic TypeScript compiler API
+  is what makes the accurate resolver possible, and projects without it get
+  the honestly-labeled, relative-imports-only fallback described above.
+
 ## Developer loop
 
 For fast local iteration, veris can scope checks to what you changed instead
@@ -120,12 +191,33 @@ changed file to the check categories it plausibly touches:
 | docs/assets (`.md`, images, `LICENSE`) | nothing |
 | anything else unrecognized | every available check (safe default) |
 
-This is **coarse — there is no import graph yet**. `affected` maps changed
-*files* to check *categories*, not to the specific modules or tests that
-actually import them; a real dependency-aware "run exactly the tests this
-file affects" is planned for v0.3. Today it will sometimes run more than the
-minimal ideal set (a config change reruns everything), but it never silently
-skips work it can't prove is safe to skip.
+The table above decides *which check categories* run — that part is still a
+coarse, file-extension-based mapping. **What changed in v0.3 is what happens
+inside the `unit` category.** Instead of running every unit test in the
+project, `affected` builds the same import graph that
+[`veris scan`/`veris plan`](#project-intelligence) use and narrows the unit
+run to only the test files that **transitively import** your changed files.
+
+That narrowing is deliberately conservative — it **falls back to running the
+full test suite** rather than ever risk hiding an affected test:
+
+- any changed file matches a config/global pattern (`tsconfig*.json`,
+  `package.json`, a `*.config.*` or `*.setup.*` file, biome/eslint config, …);
+- a changed file isn't resolved in the graph at all (outside the project
+  root, or the resolver couldn't parse it);
+- no test file transitively reaches any of the changed files (an untested
+  change).
+
+The output says when a run was narrowed and why it wasn't:
+
+```text
+unit narrowed to 3 of 41 test file(s) via typescript graph
+unit ran in full — global/config change (package.json)
+```
+
+Today it will still sometimes run more than the minimal ideal set (a config
+change reruns everything, an unresolved file falls back to full), but it
+never silently skips work it can't prove is safe to skip.
 
 **The verdict is honestly scoped.** An `affected` run never prints a bare
 "Verified" — the terminal output and report say "Affected checks passed" (or
@@ -151,6 +243,11 @@ isn't supported, or on filesystems (containers, some network mounts) where
 native change events are unreliable, pass `--poll` to fall back to an
 interval-based scan that diffs file mtimes instead.
 
+Every tick after the baseline uses the same graph-based `unit` narrowing (and
+conservative full-suite fallback) described above for `affected` — the graph
+is rebuilt fresh each tick, so it always reflects the file you just saved,
+not a stale snapshot.
+
 Each tick reprints the full check board. A capability that wasn't affected by
 the latest change keeps showing its last real result, marked `⟳ cached` — a
 cached **failure stays a failure** (✗); it is never hidden or silently
@@ -169,7 +266,9 @@ Every `veris verify` run writes:
 
 `.veris/config.json` and `.veris/.gitignore` are meant to be committed;
 `.veris/runs/`, `.veris/reports/`, and `.veris/cache/` are gitignored by
-`veris init`.
+`veris init`. `.veris/graph.json` (written by [`veris scan`](#project-intelligence))
+is a separate derived cache, rebuilt on every scan — treat it the same way
+and don't commit it.
 
 ## Design
 
