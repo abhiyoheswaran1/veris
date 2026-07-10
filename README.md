@@ -12,6 +12,12 @@
   <img src="https://img.shields.io/badge/license-MIT-14b8a6" alt="MIT license">
 </p>
 
+<p align="center">
+  <img src="assets/veriskit-affected.gif" alt="veris affected narrowing the unit run to only the tests that reach a change" width="760">
+</p>
+
+<p align="center"><em>Change a file. VerisKit runs only the tests that reach it (2 of 28 here), then gives an honest verdict.</em></p>
+
 ---
 
 VerisKit runs the test and quality tools your project already has (TypeScript, Vitest, Jest, `node:test`, ESLint, Biome), then turns their results into one honest verdict with a Markdown report you can paste into a pull request. There is no config to write and no new test framework to learn.
