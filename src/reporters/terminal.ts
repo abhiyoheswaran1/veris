@@ -27,11 +27,11 @@ export function renderRun(run: VerificationRun): string {
   const lines: string[] = [];
   const scoped = run.scope?.kind;
   if (scoped) {
-    lines.push(bold(`Veris — ${scoped}`));
+    lines.push(bold(`VerisKit — ${scoped}`));
     lines.push("");
     lines.push(`Scope       ${run.scope?.changedCount ?? 0} changed file(s)`);
   } else {
-    lines.push(bold("Veris"));
+    lines.push(bold("VerisKit"));
     lines.push("");
     lines.push(
       `Project     ${run.project.root.split("/").pop() ?? run.project.root}`,

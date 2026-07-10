@@ -54,7 +54,7 @@ const run: VerificationRun = {
 describe("renderMarkdown", () => {
   it("includes verdict, each check, and the skipped list with reasons", () => {
     const md = renderMarkdown(run);
-    expect(md).toContain("# Veris Verification Report");
+    expect(md).toContain("# VerisKit Verification Report");
     expect(md).toContain("types");
     expect(md).toContain("no linter configured");
     expect(md).toContain("v26.0.0");

@@ -14,7 +14,7 @@ export function renderScan(graph: ProjectGraph, analysis: Analysis): string {
   const dim = (s: string) => (plain ? s : pc.dim(s));
   const warn = (s: string) => (plain ? s : pc.yellow(s));
   const lines: string[] = [];
-  lines.push(bold("Veris — scan"));
+  lines.push(bold("VerisKit — scan"));
   lines.push("");
   lines.push(
     `Resolver    ${graph.resolver}${graph.resolver === "scanner" ? dim("  (no TypeScript found — relative imports only)") : ""}`,

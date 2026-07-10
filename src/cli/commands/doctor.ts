@@ -9,7 +9,7 @@ export function renderDoctor(project: Project, env: EnvironmentInfo): string {
   const ok = (s: string) => (plain ? s : pc.green(s));
   const dim = (s: string) => (plain ? s : pc.dim(s));
   const lines: string[] = [];
-  lines.push("Veris doctor");
+  lines.push("VerisKit doctor");
   lines.push("");
   lines.push(`Package manager  ${project.packageManager}`);
   lines.push(`Node             ${env.node}`);

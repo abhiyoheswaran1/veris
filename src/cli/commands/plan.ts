@@ -18,7 +18,7 @@ export function renderPlan(
   const dim = (s: string) => (plain ? s : pc.dim(s));
   const warn = (s: string) => (plain ? s : pc.yellow(s));
   const lines: string[] = [];
-  lines.push(bold("Veris — plan"));
+  lines.push(bold("VerisKit — plan"));
   lines.push(dim(`(graph via ${graph.resolver})`));
   lines.push("");
   lines.push("Test these first (high impact, untested)");

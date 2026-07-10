@@ -22,7 +22,7 @@ export async function runInit(root: string): Promise<number> {
   process.stdout.write(
     wroteConfig
       ? `Veris initialized. Detected checks: ${defaultChecks.join(", ") || "none"}.\n`
-      : "Veris already initialized (.veris/config.json exists). Nothing overwritten.\n",
+      : "VerisKit already initialized (.veris/config.json exists). Nothing overwritten.\n",
   );
   return 0;
 }
