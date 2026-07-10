@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 160" width="620" height="160" role="img" aria-label="VerisKit">
+  <title>VerisKit wordmark (mark + logotype, for light backgrounds)</title>
+  <defs>
+    <linearGradient id="vk-mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="1" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(12 16) scale(0.25)">
+    <path d="M 168 214 L 230 340 L 346 158"
+          fill="none" stroke="url(#vk-mark)" stroke-width="40"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="156" y="106" font-family="'Inter','Helvetica Neue',Arial,sans-serif"
+        font-size="92" font-weight="700" letter-spacing="-3" fill="#0A2E33">VerisKit</text>
+</svg>

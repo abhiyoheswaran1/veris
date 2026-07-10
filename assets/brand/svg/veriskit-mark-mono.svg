@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="VerisKit mark">
+  <title>VerisKit mark (monochrome, uses currentColor)</title>
+  <!-- Single-color mark for stamping. Inherits text color via currentColor;
+       recolor by setting `color` on the element, or the stroke directly. -->
+  <path d="M 168 214 L 230 340 L 346 158"
+        fill="none" stroke="currentColor" stroke-width="40"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
