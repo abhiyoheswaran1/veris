@@ -1,7 +1,13 @@
 import type { EvidenceRecord } from "./record.js";
 import { canonicalize, sha256 } from "./record.js";
-import type { EvidenceCheckResult, VerifyResult } from "./verify-evidence.js";
-import { verifyRecord } from "./verify-evidence.js";
+import type { Signature } from "./signing.js";
+import {
+  type EvidenceCheckResult,
+  signatureChecks,
+  type VerifyOptions,
+  type VerifyResult,
+  verifyRecord,
+} from "./verify-evidence.js";
 
 export const BUNDLE_SCHEMA = "veriskit/bundle@1";
 
@@ -11,6 +17,7 @@ export interface Bundle {
   report: string;
   logs: Record<string, string>;
   manifest: { record: string; report: string; logs: Record<string, string> };
+  signature?: Signature;
   bundleDigest: string;
 }
 
@@ -18,6 +25,7 @@ export function buildBundle(
   record: EvidenceRecord,
   report: string,
   logs: Record<string, string>,
+  signature?: Signature,
 ): Bundle {
   const manifest = {
     record: record.digest,
@@ -26,11 +34,16 @@ export function buildBundle(
       Object.entries(logs).map(([k, v]) => [k, sha256(v)]),
     ),
   };
-  const base = { schema: BUNDLE_SCHEMA, record, report, logs, manifest };
+  const base = signature
+    ? { schema: BUNDLE_SCHEMA, record, report, logs, manifest, signature }
+    : { schema: BUNDLE_SCHEMA, record, report, logs, manifest };
   return { ...base, bundleDigest: sha256(canonicalize(base)) };
 }
 
-export function verifyBundle(bundle: Bundle): VerifyResult {
+export function verifyBundle(
+  bundle: Bundle,
+  opts: VerifyOptions = {},
+): VerifyResult {
   const checks: EvidenceCheckResult[] = [];
 
   const recordResult = verifyRecord(bundle.record);
@@ -61,11 +74,22 @@ export function verifyBundle(bundle: Bundle): VerifyResult {
     detail: recomputed === bundle.bundleDigest ? "matches" : "mismatch",
   });
 
+  let signed = false;
+  if (bundle.signature) {
+    signed = true;
+    checks.push(
+      ...signatureChecks(bundle.record.digest, bundle.signature, {
+        expectedKeyId: opts.expectedKeyId,
+        expectedPubKeyPem: opts.expectedPubKeyPem,
+      }),
+    );
+  }
+
   return {
     ok: checks.every((c) => c.ok),
     kind: "bundle",
     record: bundle.record,
     checks,
-    signed: false,
+    signed,
   };
 }

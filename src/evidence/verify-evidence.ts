@@ -91,7 +91,7 @@ export async function verifyEvidenceFile(
   const parsed = JSON.parse(await readFile(path, "utf8"));
   if (parsed?.schema === "veriskit/bundle@1") {
     const { verifyBundle } = await import("./bundle.js");
-    return verifyBundle(parsed);
+    return verifyBundle(parsed, opts);
   }
 
   const result = verifyRecord(parsed as EvidenceRecord);

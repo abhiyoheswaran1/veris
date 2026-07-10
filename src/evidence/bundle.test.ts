@@ -50,3 +50,34 @@ describe("bundle", () => {
     expect(verifyBundle(bundle).ok).toBe(false);
   });
 });
+
+import { generateKeyPair, signDigest } from "./signing.js";
+
+describe("bundle signatures", () => {
+  it("verifies a bundle that carries a valid signature", () => {
+    const r = rec();
+    const kp = generateKeyPair();
+    const sig = signDigest(r.digest, kp.privateKeyPem);
+    const bundle = buildBundle(r, "# report", { unit: "log" }, sig);
+    const result = verifyBundle(bundle);
+    expect(result.signed).toBe(true);
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails when the carried signature is tampered", () => {
+    const r = rec();
+    const kp = generateKeyPair();
+    const sig = signDigest(r.digest, kp.privateKeyPem);
+    const bundle = buildBundle(r, "# report", {}, sig);
+    bundle.signature = {
+      ...sig,
+      signature: Buffer.from("x").toString("base64"),
+    };
+    expect(verifyBundle(bundle).ok).toBe(false);
+  });
+
+  it("stays unsigned when no signature is provided", () => {
+    const bundle = buildBundle(rec(), "# report", {});
+    expect(verifyBundle(bundle).signed).toBe(false);
+  });
+});
