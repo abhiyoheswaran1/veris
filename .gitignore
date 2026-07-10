@@ -16,3 +16,5 @@ dist
 .agentflight/reports/
 .agentflight/sessions/
 .agentflight/evidence/
+.veris/graph.json
+.claude/

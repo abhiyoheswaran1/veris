@@ -65,6 +65,24 @@ export function buildCli() {
       process.exitCode = await runWatch(process.cwd(), { poll: opts.poll });
     });
 
+  cli
+    .command("scan", "Map the import graph and untested areas (read-only)")
+    .action(async () => {
+      const { runScan } = await import("./commands/scan.js");
+      process.exitCode = await runScan(process.cwd());
+    });
+
+  cli
+    .command(
+      "plan",
+      "Recommend what to test, from the import graph (read-only)",
+    )
+    .option("--base <ref>", "Also factor in changes vs a git ref")
+    .action(async (opts: { base?: string }) => {
+      const { runPlan } = await import("./commands/plan.js");
+      process.exitCode = await runPlan(process.cwd(), { base: opts.base });
+    });
+
   return { raw: cli, version: VERSION };
 }
 
