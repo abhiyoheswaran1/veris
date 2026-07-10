@@ -34,6 +34,9 @@ export function verifyRecord(record: EvidenceRecord): VerifyResult {
 
 export async function verifyEvidenceFile(path: string): Promise<VerifyResult> {
   const parsed = JSON.parse(await readFile(path, "utf8"));
-  // Bundle dispatch is added in the bundle task; records are handled here.
+  if (parsed?.schema === "veriskit/bundle@1") {
+    const { verifyBundle } = await import("./bundle.js");
+    return verifyBundle(parsed);
+  }
   return verifyRecord(parsed as EvidenceRecord);
 }
