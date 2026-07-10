@@ -65,18 +65,27 @@ export function tsImports(
     return [];
   }
   const abs = join(root, file);
-  const pre = tsmod.preProcessFile(text, true, true);
   const out = new Set<string>();
-  for (const imp of pre.importedFiles) {
-    const res = tsmod.resolveModuleName(imp.fileName, abs, options, tsmod.sys);
-    const resolved = res.resolvedModule?.resolvedFileName;
-    if (
-      resolved &&
-      !resolved.includes("node_modules") &&
-      resolved.startsWith(root + sep)
-    ) {
-      out.add(toPosix(relative(root, resolved)));
+  try {
+    const pre = tsmod.preProcessFile(text, true, true);
+    for (const imp of pre.importedFiles) {
+      const res = tsmod.resolveModuleName(
+        imp.fileName,
+        abs,
+        options,
+        tsmod.sys,
+      );
+      const resolved = res.resolvedModule?.resolvedFileName;
+      if (
+        resolved &&
+        !resolved.includes("node_modules") &&
+        resolved.startsWith(root + sep)
+      ) {
+        out.add(toPosix(relative(root, resolved)));
+      }
     }
+  } catch {
+    // a per-file TS error must not crash the whole graph build
   }
   return [...out];
 }

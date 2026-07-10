@@ -1,8 +1,10 @@
+import type * as ts from "typescript";
 import { describe, expect, it } from "vitest";
 import {
   hasClassicApi,
   loadTypeScript,
   selectResolver,
+  tsImports,
 } from "./ts-resolver.js";
 
 describe("ts-resolver", () => {
@@ -38,5 +40,19 @@ describe("ts-resolver", () => {
   it("hasClassicApi returns true for the real (classic-API) typescript module", () => {
     const ts = loadTypeScript(process.cwd());
     expect(hasClassicApi(ts)).toBe(true);
+  });
+
+  it("tsImports returns [] instead of throwing when preProcessFile fails on a single file", () => {
+    const fakeTs = {
+      preProcessFile: () => {
+        throw new Error("boom: simulated per-file TS failure");
+      },
+    } as unknown as typeof ts;
+    expect(() =>
+      tsImports(fakeTs, process.cwd(), {}, "src/project-graph/graph.ts"),
+    ).not.toThrow();
+    expect(
+      tsImports(fakeTs, process.cwd(), {}, "src/project-graph/graph.ts"),
+    ).toEqual([]);
   });
 });
