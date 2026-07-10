@@ -14,6 +14,14 @@ export function selectAffectedTests(
   graph: ProjectGraph,
   changed: string[],
 ): TestSelection {
+  if (graph.resolver !== "typescript") {
+    return {
+      mode: "full",
+      testFiles: [],
+      reason:
+        "scanner graph can miss aliased/subpath imports — running the full suite",
+    };
+  }
   for (const f of changed) {
     if (GLOBAL_RE.test(f)) {
       return {

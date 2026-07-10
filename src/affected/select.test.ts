@@ -69,4 +69,14 @@ describe("selectAffectedTests", () => {
     expect(s.testFiles).toEqual([]);
     expect(s.reason).toContain("unsafe");
   });
+  it("falls back to full on a scanner-resolved graph, even when a test reaches the change", () => {
+    const scannerGraph = {
+      ...graph,
+      resolver: "scanner",
+    } as unknown as ProjectGraph;
+    const s = selectAffectedTests(scannerGraph, ["a.ts"]);
+    expect(s.mode).toBe("full");
+    expect(s.testFiles).toEqual([]);
+    expect(s.reason).toContain("scanner");
+  });
 });

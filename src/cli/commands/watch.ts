@@ -64,7 +64,11 @@ export async function runWatch(
 
       let targetFiles: Partial<Record<CapabilityId, string[]>> | undefined;
       let narrowedNote = "";
-      if (!initial && checks.includes("unit")) {
+      const unitRunner = project.capabilities.find(
+        (c) => c.id === "unit",
+      )?.runner;
+      const canNarrow = unitRunner === "vitest" || unitRunner === "jest";
+      if (!initial && checks.includes("unit") && canNarrow) {
         const { buildGraph } = await import("../../project-graph/graph.js");
         const { selectAffectedTests } = await import(
           "../../affected/select.js"
@@ -77,6 +81,8 @@ export async function runWatch(
         } else {
           narrowedNote = `unit ran in full — ${sel.reason}`;
         }
+      } else if (!initial && checks.includes("unit") && unitRunner) {
+        narrowedNote = `unit ran in full — the ${unitRunner} runner does not support file filtering`;
       }
 
       let fresh: CheckResult[] = [];
