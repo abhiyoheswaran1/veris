@@ -1,8 +1,10 @@
 node_modules
 dist
+.DS_Store
 .veris/runs
 .veris/reports
 .veris/cache
+.veris/evidence
 .projscan-memory/
 .superpowers/
 
