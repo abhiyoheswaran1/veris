@@ -61,5 +61,10 @@ export async function gitAnchor(root: string): Promise<GitAnchor | null> {
           .filter(Boolean)
       : [];
 
-  return { commit, branch, dirty: lines.length > 0, changedFiles: lines.length };
+  return {
+    commit,
+    branch,
+    dirty: lines.length > 0,
+    changedFiles: lines.length,
+  };
 }

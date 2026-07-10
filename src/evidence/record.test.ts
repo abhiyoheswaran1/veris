@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
-import {
-  buildRecord,
-  canonicalize,
-  computeDigest,
-  sha256,
-} from "./record.js";
+import { buildRecord, canonicalize, computeDigest, sha256 } from "./record.js";
 
 describe("canonicalize", () => {
   it("sorts object keys recursively and drops whitespace", () => {
