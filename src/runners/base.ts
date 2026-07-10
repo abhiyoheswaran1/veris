@@ -10,7 +10,11 @@ export interface RunContext {
 
 export interface Runner {
   id: string;
-  toCheck(project: Project, cap: Capability): Check;
+  toCheck(
+    project: Project,
+    cap: Capability,
+    opts?: { targetFiles?: string[] },
+  ): Check;
   run(check: Check, ctx: RunContext): Promise<CheckResult>;
 }
 

@@ -13,6 +13,7 @@ export async function runChecks(
   project: Project,
   ids: CapabilityId[],
   root: string,
+  opts: { targetFiles?: Partial<Record<CapabilityId, string[]>> } = {},
 ): Promise<VerificationRun> {
   const known = new Set(project.capabilities.map((c) => c.id));
   const unknown = ids.filter((id) => !known.has(id));
@@ -38,7 +39,9 @@ export async function runChecks(
         summary,
       };
     }
-    const check = runner.toCheck(project, cap);
+    const check = runner.toCheck(project, cap, {
+      targetFiles: opts.targetFiles?.[capId],
+    });
     return runner.run(check, ctx);
   });
 

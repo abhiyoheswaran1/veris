@@ -1,5 +1,6 @@
 import { affectedChecks } from "../../affected/gate.js";
 import { detectProject } from "../../config/detect.js";
+import type { CapabilityId } from "../../core/model.js";
 import { runChecks } from "../../core/orchestrator.js";
 import { verdictExitCode } from "../../core/verdict.js";
 import {
@@ -26,7 +27,22 @@ export async function runAffected(
     return 0;
   }
 
-  const run = await runChecks(project, plan.checks, root);
+  let targetFiles: Partial<Record<CapabilityId, string[]>> | undefined;
+  let narrowedNote = "";
+  if (plan.checks.includes("unit")) {
+    const { buildGraph } = await import("../../project-graph/graph.js");
+    const { selectAffectedTests } = await import("../../affected/select.js");
+    const graph = await buildGraph(project);
+    const sel = selectAffectedTests(graph, files);
+    if (sel.mode === "graph") {
+      targetFiles = { unit: sel.testFiles };
+      narrowedNote = `unit narrowed to ${sel.testFiles.length} of ${graph.testFiles.length} test file(s) via ${graph.resolver} graph`;
+    } else {
+      narrowedNote = `unit ran in full — ${sel.reason}`;
+    }
+  }
+
+  const run = await runChecks(project, plan.checks, root, { targetFiles });
   run.scope = { kind: "affected", changedCount: files.length };
 
   // Display-only: show available-but-unaffected capabilities as skipped.
@@ -49,5 +65,6 @@ export async function runAffected(
   await writeMetadata(runDir, run);
 
   process.stdout.write(`${renderRun(run)}\n`);
+  if (narrowedNote) process.stdout.write(`${narrowedNote}\n`);
   return verdictExitCode(run.verdict, opts);
 }

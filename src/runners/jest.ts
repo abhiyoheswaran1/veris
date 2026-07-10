@@ -3,13 +3,17 @@ import { localBin, type RunContext, type Runner, runViaExec } from "./base.js";
 
 export const jestRunner: Runner = {
   id: "jest",
-  toCheck(project: Project, _cap: Capability): Check {
+  toCheck(
+    project: Project,
+    _cap: Capability,
+    opts?: { targetFiles?: string[] },
+  ): Check {
     return {
       id: "unit",
       title: "Unit tests",
       runner: "jest",
       cmd: localBin(project.root, "jest"),
-      args: ["--ci"],
+      args: ["--ci", ...(opts?.targetFiles ?? [])],
     };
   },
   run(check: Check, ctx: RunContext): Promise<CheckResult> {

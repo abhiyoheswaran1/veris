@@ -61,9 +61,27 @@ export async function runWatch(
       const checks = initial
         ? availableIds(project)
         : affectedChecks(files, project).checks;
+
+      let targetFiles: Partial<Record<CapabilityId, string[]>> | undefined;
+      let narrowedNote = "";
+      if (!initial && checks.includes("unit")) {
+        const { buildGraph } = await import("../../project-graph/graph.js");
+        const { selectAffectedTests } = await import(
+          "../../affected/select.js"
+        );
+        const graph = await buildGraph(project);
+        const sel = selectAffectedTests(graph, files);
+        if (sel.mode === "graph") {
+          targetFiles = { unit: sel.testFiles };
+          narrowedNote = `unit narrowed to ${sel.testFiles.length} of ${graph.testFiles.length} test file(s) via ${graph.resolver} graph`;
+        } else {
+          narrowedNote = `unit ran in full — ${sel.reason}`;
+        }
+      }
+
       let fresh: CheckResult[] = [];
       if (checks.length) {
-        const r = await runChecks(project, checks, root);
+        const r = await runChecks(project, checks, root, { targetFiles });
         fresh = r.results;
         for (const result of fresh) cache.set(result.checkId, { ...result });
       }
@@ -88,6 +106,7 @@ export async function runWatch(
         scope: { kind: "watch" as const, changedCount: files.length },
       };
       process.stdout.write(`${renderRun(run)}\n`);
+      if (narrowedNote) process.stdout.write(`${narrowedNote}\n`);
     } finally {
       running = false;
     }
