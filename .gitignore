@@ -19,4 +19,5 @@ dist
 .agentflight/sessions/
 .agentflight/evidence/
 .veris/graph.json
+.veris/keys
 .claude/

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1 — 2026-07-10
+
+### Added
+- Signed evidence. `veris evidence keygen` creates an Ed25519 keypair (via Node's built-in crypto, no new dependency); `veris evidence sign <evidence.json>` writes a detached signature; `veris evidence verify` checks a sibling signature automatically and can assert the signer with `--pubkey` or `--key-id`. Bundles carry the signature. Signing is opt-in; unsigned evidence still verifies for integrity. `VERISKIT_SIGNING_KEY` supplies the key in CI.
+
+### Changed
+- `veris init` now gitignores `keys/`.
+
 ## 0.4.0 — 2026-07-10
 
 ### Added

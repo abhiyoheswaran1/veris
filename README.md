@@ -202,6 +202,28 @@ veris evidence verify <bundle> # checks the record, every log, and the report
 
 `veris evidence show` prints the latest record's key facts.
 
+### Signing (optional)
+
+An integrity digest proves a record was not edited. A signature proves a
+specific key vouched for it. VerisKit signs with Ed25519 from Node's built-in
+crypto, so signing adds no dependency and works offline.
+
+```bash
+veris evidence keygen                         # writes .veris/keys/veriskit-signing.key(.pub)
+veris evidence sign .veris/runs/<id>/evidence.json --key .veris/keys/veriskit-signing.key
+veris evidence verify .veris/runs/<id>/evidence.json --pubkey .veris/keys/veriskit-signing.key.pub
+```
+
+`sign` writes a detached `<evidence.json>.sig` next to the record. `verify`
+picks it up automatically and checks it. In CI, pass the key through the
+`VERISKIT_SIGNING_KEY` environment variable instead of a file.
+
+A signature proves that whoever holds the private key signed the record. It
+does not prove who that is. VerisKit prints the key fingerprint; to bind it to
+a person or system, compare that fingerprint to one you already trust, or
+assert it with `--pubkey` or `--key-id`. Keep the private key secret; `keygen`
+writes it into `.veris/keys/`, which `veris init` gitignores.
+
 Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` keeps `runs/`,
 `reports/`, `cache/`, `graph.json`, and `evidence/` out of your history.
 
