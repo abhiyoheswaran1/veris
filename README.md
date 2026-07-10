@@ -53,7 +53,7 @@ Two more commands round out the basics. `veris doctor` prints a read-only capabi
 `veris verify` runs your checks and prints one result. Here is a passing run:
 
 ```text
-Veris
+VerisKit
 
 Project     veriskit
 Risk        —
