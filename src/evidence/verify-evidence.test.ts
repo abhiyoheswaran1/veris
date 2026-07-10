@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
 import { buildRecord } from "./record.js";
-import { verifyRecord } from "./verify-evidence.js";
+import { generateKeyPair, signDigest } from "./signing.js";
+import { signatureChecks, verifyRecord } from "./verify-evidence.js";
 
 function run(): VerificationRun {
   return {
@@ -44,5 +45,43 @@ describe("verifyRecord", () => {
     expect(result.checks.find((c) => c.name === "record digest")?.ok).toBe(
       false,
     );
+  });
+});
+
+describe("signatureChecks", () => {
+  it("passes for a valid signature over the record digest", () => {
+    const kp = generateKeyPair();
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const sig = signDigest(rec.digest, kp.privateKeyPem);
+    const checks = signatureChecks(rec.digest, sig);
+    expect(checks.find((c) => c.name === "signature")?.ok).toBe(true);
+  });
+
+  it("fails when the signature is over a different digest", () => {
+    const kp = generateKeyPair();
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const sig = signDigest("sha256:somethingelse", kp.privateKeyPem);
+    const checks = signatureChecks(rec.digest, sig);
+    expect(checks.find((c) => c.name === "signature")?.ok).toBe(false);
+  });
+
+  it("adds a signer check that fails on a key-id mismatch", () => {
+    const kp = generateKeyPair();
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const sig = signDigest(rec.digest, kp.privateKeyPem);
+    const checks = signatureChecks(rec.digest, sig, {
+      expectedKeyId: "deadbeef",
+    });
+    expect(checks.find((c) => c.name === "signer")?.ok).toBe(false);
+  });
+
+  it("signer check passes when the expected key-id matches", () => {
+    const kp = generateKeyPair();
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const sig = signDigest(rec.digest, kp.privateKeyPem);
+    const checks = signatureChecks(rec.digest, sig, {
+      expectedKeyId: kp.keyId,
+    });
+    expect(checks.find((c) => c.name === "signer")?.ok).toBe(true);
   });
 });

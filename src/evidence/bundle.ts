@@ -66,5 +66,6 @@ export function verifyBundle(bundle: Bundle): VerifyResult {
     kind: "bundle",
     record: bundle.record,
     checks,
+    signed: false,
   };
 }
