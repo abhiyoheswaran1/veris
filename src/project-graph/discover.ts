@@ -3,7 +3,7 @@ import { join, relative, sep } from "node:path";
 import type { NodeKind } from "./model.js";
 
 const IGNORE =
-  /(^|\/)(\.git|\.veris|\.agentloop|\.agentflight|node_modules|dist|coverage|build)(\/|$)/;
+  /(^|\/)(\.git|\.claude|\.veris|\.agentloop|\.agentflight|node_modules|dist|coverage|build|fixtures|__fixtures__)(\/|$)/;
 const CODE_RE = /\.[cm]?[jt]sx?$/;
 const TEST_RE = /(\.(test|spec)\.[cm]?[jt]sx?$)|(^|\/)(test|tests|__tests__)\//;
 const CONFIG_RE = /(^|\/)([^/]+\.config\.[cm]?[jt]sx?)$/;
