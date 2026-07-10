@@ -66,6 +66,8 @@ Checks
 Result
   ✓ Verified
 
+Commit      4fa33a9 · tree clean
+
 Report
   .veris/reports/verify-2026-07-10T09-04-52-076Z-1.md
 ```
@@ -167,12 +169,41 @@ veris plan --base main   # also factor in changes vs another ref
 
 ## Evidence
 
-Every `veris verify` run leaves a record:
+Every `veris verify` and `veris affected` run leaves a canonical, git-anchored
+evidence record you can check later or hand to someone else as proof.
 
-- A Markdown report at `.veris/reports/verify-<run-id>.md` with project and environment metadata, per-check status, timing, and summary, the verdict with its skipped list and reasons, and log references. Paste it into a PR.
-- Raw per-check logs and run metadata under `.veris/runs/<run-id>/`.
+- `.veris/runs/<run-id>/evidence.json` is the machine-readable record: schema
+  `veriskit/evidence@1`, the verdict, per-check results, the environment, the
+  git commit and whether the tree was clean, and a sha256 integrity digest over
+  the whole record.
+- `.veris/reports/verify-<run-id>.md` is the human-readable report, now showing
+  the commit and the digest. Paste it into a PR.
+- Raw per-check logs live under `.veris/runs/<run-id>/`, and the record carries
+  a sha256 of each one.
 
-Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` writes `.veris/.gitignore` so `runs/`, `reports/`, `cache/`, and `graph.json` stay out of your history.
+Check a record:
+
+```bash
+veris evidence verify .veris/runs/<run-id>/evidence.json
+```
+
+This recomputes the digest and reports whether the record was edited or
+corrupted since it was written. An integrity digest is not forgery-proof on its
+own. To prove authorship, publish the digest separately (a CI log or PR) or sign
+it. Cryptographic signing is planned for a later release.
+
+Package a run as a single portable file (the record, its report, and its logs,
+each with a digest, plus a bundle digest over everything):
+
+```bash
+veris evidence bundle          # writes .veris/evidence/<run-id>.bundle.json
+veris evidence verify <bundle> # checks the record, every log, and the report
+```
+
+`veris evidence show` prints the latest record's key facts.
+
+Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` keeps `runs/`,
+`reports/`, `cache/`, `graph.json`, and `evidence/` out of your history.
 
 ## What VerisKit does not do yet
 
@@ -182,6 +213,7 @@ VerisKit says what it cannot do as plainly as what it can:
 - **No test generation.** `plan` tells you what to test. Writing the tests is a later release.
 - **One project root.** A monorepo with several `tsconfig.json` files is not modeled yet. Resolution runs against the root project.
 - **Scanner fallback on plain-JS or TS 7.x-native projects.** The accurate resolver needs the classic TypeScript compiler API. Without it you get the labeled, relative-imports-only graph described above, and no dependency is added to paper over the gap.
+- **No cryptographic signing.** Evidence carries an integrity digest, not a signature. Keyless signing is planned.
 
 ## Part of Baseframe Labs
 

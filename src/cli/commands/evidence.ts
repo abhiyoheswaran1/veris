@@ -41,7 +41,7 @@ export async function runEvidenceVerify(path: string): Promise<number> {
     ? `commit ${g.commit.slice(0, 7)} · ${g.dirty ? "tree dirty" : "tree clean"}`
     : "no git anchor";
   process.stdout.write(
-    `\n${result.ok ? "verified" : "TAMPERED"} · ${result.record.verdict.state} · ${anchor}\n`,
+    `\n${result.ok ? "digest OK" : "TAMPERED"} · verdict ${result.record.verdict.state} · ${anchor}\n`,
   );
   process.stdout.write(`\n${HONESTY}\n`);
   return result.ok ? 0 : 1;

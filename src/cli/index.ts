@@ -84,28 +84,39 @@ export function buildCli() {
     });
 
   cli
-    .command("evidence verify <file>", "Recompute and check an evidence digest")
-    .action(async (file: string) => {
-      const { runEvidenceVerify } = await import("./commands/evidence.js");
-      process.exitCode = await runEvidenceVerify(file);
-    });
-
-  cli
-    .command("evidence bundle", "Package the latest run into a portable proof")
-    .option("--out <file>", "Write the bundle to a specific path")
-    .action(async (opts: { out?: string }) => {
-      const { runEvidenceBundle } = await import("./commands/evidence.js");
-      process.exitCode = await runEvidenceBundle(process.cwd(), {
-        out: opts.out,
-      });
-    });
-
-  cli
-    .command("evidence show [file]", "Print the latest evidence record")
-    .action(async (file?: string) => {
-      const { runEvidenceShow } = await import("./commands/evidence.js");
-      process.exitCode = await runEvidenceShow(process.cwd(), file);
-    });
+    .command(
+      "evidence <action> [file]",
+      "Evidence tools: verify <file> | bundle | show [file]",
+    )
+    .option("--out <file>", "For bundle: write to a specific path")
+    .action(
+      async (
+        action: string,
+        file: string | undefined,
+        opts: { out?: string },
+      ) => {
+        const mod = await import("./commands/evidence.js");
+        if (action === "verify") {
+          if (!file) {
+            process.stderr.write("veris: evidence verify needs a <file>\n");
+            process.exitCode = 1;
+            return;
+          }
+          process.exitCode = await mod.runEvidenceVerify(file);
+        } else if (action === "bundle") {
+          process.exitCode = await mod.runEvidenceBundle(process.cwd(), {
+            out: opts.out,
+          });
+        } else if (action === "show") {
+          process.exitCode = await mod.runEvidenceShow(process.cwd(), file);
+        } else {
+          process.stderr.write(
+            `veris: unknown evidence action '${action}' (use verify | bundle | show)\n`,
+          );
+          process.exitCode = 1;
+        }
+      },
+    );
 
   return { raw: cli, version: VERSION };
 }

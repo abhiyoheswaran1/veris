@@ -2,7 +2,14 @@ import { join } from "node:path";
 import { detectProject } from "../../config/detect.js";
 import { ensureDir, writeIfAbsent } from "../../util/fs-safe.js";
 
-const GITIGNORE = ["runs/", "reports/", "cache/", "graph.json", ""].join("\n");
+const GITIGNORE = [
+  "runs/",
+  "reports/",
+  "cache/",
+  "graph.json",
+  "evidence/",
+  "",
+].join("\n");
 
 export async function runInit(root: string): Promise<number> {
   const project = await detectProject(root);

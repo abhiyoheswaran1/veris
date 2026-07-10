@@ -15,6 +15,7 @@ describe("runInit", () => {
     // gitignored alongside runs/reports/cache so downstream repos stay clean.
     const gitignore = readFileSync(join(dir, ".veris", ".gitignore"), "utf8");
     expect(gitignore).toContain("graph.json");
+    expect(gitignore).toContain("evidence/");
     // second run must not throw or overwrite
     expect(await runInit(dir)).toBe(0);
   });

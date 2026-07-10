@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 — 2026-07-10
+
+### Added
+- Evidence System. Every `veris verify` and `veris affected` run writes a canonical, git-anchored `.veris/runs/<id>/evidence.json` (schema `veriskit/evidence@1`) with a sha256 integrity digest over the whole record and a sha256 of each per-check log. No new runtime dependencies.
+- `veris evidence verify <file>` recomputes and checks a record or a bundle, and states plainly what an integrity digest does and does not prove.
+- `veris evidence bundle` packages the latest run (record, report, and logs, each digested) into one portable proof file under `.veris/evidence/`.
+- `veris evidence show` prints the latest record's key facts.
+
+### Changed
+- The report and terminal output now show the git commit and whether the tree was clean, plus the evidence digest in the report.
+- `evidence.json` replaces the older `metadata.json`. `veris init` now also gitignores `evidence/`.
+
 ## 0.3.0 — 2026-07-10
 
 ### Added
