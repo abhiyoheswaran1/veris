@@ -24,6 +24,27 @@ const graph = {
   },
 } as unknown as ProjectGraph;
 
+const unsafeGraph = {
+  root: "/x",
+  resolver: "typescript",
+  sourceFiles: ["b.ts"],
+  testFiles: ["-danger.test.ts"],
+  nodes: {
+    "b.ts": {
+      file: "b.ts",
+      kind: "source",
+      imports: [],
+      importedBy: ["-danger.test.ts"],
+    },
+    "-danger.test.ts": {
+      file: "-danger.test.ts",
+      kind: "test",
+      imports: ["b.ts"],
+      importedBy: [],
+    },
+  },
+} as unknown as ProjectGraph;
+
 describe("selectAffectedTests", () => {
   it("narrows to the test files reaching a changed source file", () => {
     const s = selectAffectedTests(graph, ["a.ts"]);
@@ -41,5 +62,11 @@ describe("selectAffectedTests", () => {
     const s = selectAffectedTests(graph, ["u.ts"]);
     expect(s.mode).toBe("full");
     expect(s.reason).toContain("no tests");
+  });
+  it("falls back to full when a reaching test path starts with '-' (argv flag smuggling)", () => {
+    const s = selectAffectedTests(unsafeGraph, ["b.ts"]);
+    expect(s.mode).toBe("full");
+    expect(s.testFiles).toEqual([]);
+    expect(s.reason).toContain("unsafe");
   });
 });

@@ -44,5 +44,13 @@ export function selectAffectedTests(
       reason: "no tests reach the changed files",
     };
   }
-  return { mode: "graph", testFiles: [...tests].sort(), reason: "" };
+  const selected = [...tests].sort();
+  if (selected.some((t) => t.startsWith("-"))) {
+    return {
+      mode: "full",
+      testFiles: [],
+      reason: "a reaching test path starts with '-' (unsafe as a CLI argument)",
+    };
+  }
+  return { mode: "graph", testFiles: selected, reason: "" };
 }
