@@ -83,6 +83,30 @@ export function buildCli() {
       process.exitCode = await runPlan(process.cwd(), { base: opts.base });
     });
 
+  cli
+    .command("evidence verify <file>", "Recompute and check an evidence digest")
+    .action(async (file: string) => {
+      const { runEvidenceVerify } = await import("./commands/evidence.js");
+      process.exitCode = await runEvidenceVerify(file);
+    });
+
+  cli
+    .command("evidence bundle", "Package the latest run into a portable proof")
+    .option("--out <file>", "Write the bundle to a specific path")
+    .action(async (opts: { out?: string }) => {
+      const { runEvidenceBundle } = await import("./commands/evidence.js");
+      process.exitCode = await runEvidenceBundle(process.cwd(), {
+        out: opts.out,
+      });
+    });
+
+  cli
+    .command("evidence show [file]", "Print the latest evidence record")
+    .action(async (file?: string) => {
+      const { runEvidenceShow } = await import("./commands/evidence.js");
+      process.exitCode = await runEvidenceShow(process.cwd(), file);
+    });
+
   return { raw: cli, version: VERSION };
 }
 
