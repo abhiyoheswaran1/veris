@@ -1,11 +1,22 @@
-# veris
+<p align="center">
+  <img src="assets/veriskit-icon.svg" alt="VerisKit" width="96" height="96">
+</p>
 
-The fastest way to prove your software works.
+<h1 align="center">VerisKit</h1>
 
-Veris is a zero-config verification CLI. It detects the tools already in your
-project — TypeScript, Vitest, Jest, `node:test`, ESLint, Biome — runs them,
-and turns the results into one honest verdict with a reviewable Markdown
-report. No config to write, no new test framework to learn.
+<p align="center"><strong>The fastest way to prove your software works.</strong></p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/veriskit"><img src="https://img.shields.io/npm/v/veriskit?color=14b8a6&label=npm" alt="npm version"></a>
+  <img src="https://img.shields.io/badge/deps-cac%20%2B%20picocolors-14b8a6" alt="two runtime dependencies">
+  <img src="https://img.shields.io/badge/license-MIT-14b8a6" alt="MIT license">
+</p>
+
+---
+
+VerisKit runs the test and quality tools your project already has (TypeScript, Vitest, Jest, `node:test`, ESLint, Biome), then turns their results into one honest verdict with a Markdown report you can paste into a pull request. There is no config to write and no new test framework to learn.
+
+It answers the question a wall of green checkmarks leaves open: **is this change safe enough to trust?**
 
 ## Install
 
@@ -19,8 +30,7 @@ Or add it to a project:
 npm install --save-dev veriskit
 ```
 
-> Published on npm as **`veriskit`** (the bare name `veris` was too similar to an
-> existing package). The installed command is still **`veris`**.
+You install the package `veriskit`. The command it gives you is `veris`. (The bare name `veris` was already too close to another npm package.)
 
 ## Quickstart
 
@@ -30,17 +40,16 @@ veris verify    # run the configured checks, print a verdict, write a report
 veris report    # print the latest report
 ```
 
-`veris doctor` and `veris test` are also available: `doctor` is a read-only
-capability report (what will run, what will be skipped, and why); `test` runs
-just the detected unit test runner with the same summarized output as
-`verify`.
+Two more commands round out the basics. `veris doctor` prints a read-only capability report: what will run, what will be skipped, and why. `veris test` runs just the detected unit test runner with the same summarized output as `verify`.
 
-## Sample output
+## The verdict
+
+`veris verify` runs your checks and prints one result. Here is a passing run:
 
 ```text
 Veris
 
-Project     veris
+Project     veriskit
 Risk        —
 
 Checks
@@ -52,125 +61,24 @@ Result
   ✓ Verified
 
 Report
-  .veris/reports/verify-2026-07-08T22-41-03-000Z-1.md
+  .veris/reports/verify-2026-07-10T09-04-52-076Z-1.md
 ```
 
-`Risk` is shown as `—` in v0.1 — risk scoring is not built yet; the column
-exists so the layout is stable across future versions and never fakes a
-number.
+The verdict has three states, not two:
 
-## What v0.1 does — and does not do
+| Verdict | Exit code | Meaning |
+|---|---|---|
+| `verified` | `0` | every configured check ran and passed |
+| `failed` | `1` | at least one check failed |
+| `partial` | `2` (`0` with `--partial-ok`) | no failures, but a check was skipped or its result is unknown |
 
-Veris v0.1 is an **orchestrator**, not a test engine. It shells out to
-tools you already have installed and turns their exit codes and output into
-one verdict:
+A partial verdict is not a pass. A check can end up skipped when its runner is not installed, or when nothing in your change reaches it. VerisKit lists that check as skipped and lowers the verdict rather than folding it into "verified", because a folded skip hands CI confidence it did not earn. If your team wants partial runs to pass CI, opt in with `veris verify --partial-ok`.
 
-- **Orchestrates:** `tsc` (types), Vitest, Jest, and `node:test` (unit
-  tests), and ESLint or Biome (lint) — whichever your project already has
-  configured. Playwright is *detected* and reported as available; it is not
-  run.
-- **Does not** run browser tests, and does not build or ship a native test
-  execution engine. Those are explicit non-goals for v0.1 (see the design
-  spec linked below).
-- **Does not** impose a linter, a test runner, or any new config format —
-  detection is read-only and `init` never overwrites an existing
-  `.veris/config.json`.
-
-### The verdict is three states, not two
-
-- **`verified`** — every configured capability ran and passed.
-- **`failed`** — at least one check failed. Exit code `1`.
-- **`partial`** — no failures, but at least one configured capability was
-  skipped or its result is unknown (e.g. a runner wasn't installed). Exit
-  code `2` by default.
-
-**`partial` is not a pass.** Veris never folds a skipped check into
-"verified" — that would manufacture confidence CI shouldn't have. Teams that
-want partial results to pass CI can opt in explicitly with
-`veris verify --partial-ok` (exits `0` on partial).
-
-| Verdict  | Exit code | Meaning                                   |
-|----------|-----------|--------------------------------------------|
-| verified | `0`       | every configured check passed              |
-| failed   | `1`       | at least one check failed                  |
-| partial  | `2` (`0` with `--partial-ok`) | no failures, but something was skipped |
-
-## Project intelligence
-
-`veris scan` and `veris plan` map your codebase's import graph and turn it
-into recommendations — what to test, where verification is weak, and (with
-`--base`) which of your changes are risky. Both are **read-only analysis**;
-neither generates or writes any code.
-
-### `veris scan`
-
-```bash
-veris scan
-```
-
-`scan` discovers every source and test file in the project, builds an import
-graph between them, and reports the source files with the most dependents
-that no test transitively reaches ("untested, by impact"). It writes the
-graph to `.veris/graph.json` — a derived cache, rebuilt on every run and not
-meant to be committed.
-
-**`scan` always states which resolver built the graph**, because the two
-have very different accuracy:
-
-- **`typescript`** — used when the project has a `tsconfig.json` and its own
-  `typescript` package exposes the classic compiler API
-  (`preProcessFile`/`resolveModuleName`/`readConfigFile`/…). Veris loads
-  *your project's own* TypeScript at run time — **no new dependency is added
-  for this** — and resolves imports the way `tsc` would: `tsconfig` path
-  aliases, extension-mapped specifiers, index resolution, and so on.
-- **`scanner`** — the fallback when there's no TypeScript, no
-  `tsconfig.json`, or the installed `typescript` package is a 7.x
-  native/Go-ported build that doesn't expose the classic compiler API veris
-  needs. The scanner is a dependency-free, **relative-imports-only** reader:
-  it follows `./foo` and `../bar/baz` but does not understand `tsconfig`
-  path aliases or computed (non-string-literal) dynamic imports. On a
-  project that relies on aliases, this can miss real edges and undercount a
-  file's blast radius.
-  `scan` says plainly when this fallback is active — it is never presented
-  as equivalent to the TypeScript-accurate graph.
-
-### `veris plan`
-
-```bash
-veris plan               # recommendations from the current graph
-veris plan --base main   # also factor in changes vs another ref
-```
-
-`plan` reads the same graph and turns it into prioritized recommendations:
-
-- the highest-impact untested files to test first (most dependents, no test
-  reaches them);
-- gaps in your verification setup (e.g. no lint or type-check configured);
-- with `--base <ref>`, which files that changed since that ref are "risky" —
-  high blast radius and either untested or actually changed.
-
-**`plan` only recommends — it never generates or writes any code.** Test
-generation is a separate, later goal (v0.8), not something v0.3 does.
-
-### What's still deferred
-
-- **No framework route/endpoint detection.** The graph understands imports
-  only; it doesn't know a file is an Express route, a Next.js page, or an
-  API handler, so it can't flag "this endpoint has no test" the way it flags
-  "this module has no test." Planned as a v0.3.x follow-up, not v0.3.0.
-- **No test generation.** `plan` recommends what to test; it does not write
-  test files. That's v0.8.
-- **Single tsconfig, single root.** Monorepos with multiple `tsconfig.json`
-  files aren't modeled yet — resolution runs against the root project only.
-- **Plain JS / TS 7.x-native projects degrade to the scanner.** There's no
-  new dependency added to compensate — the classic TypeScript compiler API
-  is what makes the accurate resolver possible, and projects without it get
-  the honestly-labeled, relative-imports-only fallback described above.
+VerisKit orchestrates the tools you already run. It shells out to `tsc`, Vitest, Jest, `node:test`, ESLint, and Biome, reads their exit codes and output, and reports one result. It does not run browser tests, and it does not ship its own test engine. Detection stays read-only, and `init` never overwrites an existing `.veris/config.json`.
 
 ## Developer loop
 
-For fast local iteration, veris can scope checks to what you changed instead
-of always running the full set.
+While you work, scope the checks to what you touched instead of running everything.
 
 ### `veris affected`
 
@@ -179,103 +87,110 @@ veris affected              # checks affected by working-tree changes vs HEAD
 veris affected --base main  # checks affected by the diff against another ref (PR/CI)
 ```
 
-`affected` looks at which files changed — working tree + untracked files
-against `HEAD`, or against `--base <ref>` for PR/CI diffs — and maps each
-changed file to the check categories it plausibly touches:
+`affected` reads which files changed (your working tree plus untracked files against `HEAD`, or against `--base <ref>` for a PR/CI diff) and maps each one to the check categories it can touch:
 
-| Changed file        | Checks run                    |
-|----------------------|-------------------------------|
-| test file             | unit, lint                    |
-| TypeScript file        | types, lint, unit             |
-| JavaScript file        | lint, unit                    |
-| config (tsconfig, biome/eslint config, `package.json`, `veris.config.*`) | every available check |
-| docs/assets (`.md`, images, `LICENSE`) | nothing |
-| anything else unrecognized | every available check (safe default) |
+| Changed file | Checks run |
+|---|---|
+| test file | unit, lint |
+| TypeScript file | types, lint, unit |
+| JavaScript file | lint, unit |
+| config (`tsconfig`, biome/eslint config, `package.json`, `veris.config.*`) | every available check |
+| docs and assets (`.md`, images, `LICENSE`) | nothing |
+| anything else unrecognized | every available check (a safe default) |
 
-The table above decides *which check categories* run — that part is still a
-coarse, file-extension-based mapping. **What changed in v0.3 is what happens
-inside the `unit` category.** Instead of running every unit test in the
-project, `affected` builds the same import graph that
-[`veris scan`/`veris plan`](#project-intelligence) use and narrows the unit
-run to only the test files that **transitively import** your changed files.
+That table picks the check categories. Inside the `unit` category, `affected` goes further: it builds the same import graph that [`veris scan` and `veris plan`](#project-intelligence) use, then runs only the test files that transitively import your changed files.
 
-That narrowing is deliberately conservative — it **falls back to running the
-full test suite** rather than ever risk hiding an affected test:
+The narrowing stays conservative. It runs the full unit suite whenever it cannot prove a smaller set is safe:
 
-- any changed file matches a config/global pattern (`tsconfig*.json`,
-  `package.json`, a `*.config.*` or `*.setup.*` file, biome/eslint config, …);
-- a changed file isn't a node in the import graph at all (e.g. it's under an
-  ignored directory like `node_modules` or `.veris`, or it's not a
-  recognized code extension);
-- no test file transitively reaches any of the changed files (an untested
-  change).
+- a changed file matches a config or global pattern (`tsconfig*.json`, `package.json`, a `*.config.*` or `*.setup.*` file, biome/eslint config)
+- a changed file is not a node in the import graph (it sits under an ignored directory like `node_modules` or `.veris`, or it is not a recognized code extension)
+- no test file reaches any changed file, so the change has no tests to run
+- the graph came from the relative-imports scanner rather than TypeScript, which can miss aliased imports
 
-The output says when a run was narrowed and why it wasn't:
+The output says when a run was narrowed, and when it ran in full and why:
 
 ```text
 unit narrowed to 3 of 41 test file(s) via typescript graph
 unit ran in full — global/config change (package.json)
 ```
 
-Today it will still sometimes run more than the minimal ideal set (a config
-change reruns everything, an unresolved file falls back to full), but it
-never silently skips work it can't prove is safe to skip.
-
-**The verdict is honestly scoped.** An `affected` run never prints a bare
-"Verified" — the terminal output and report say "Affected checks passed" (or
-"Affected checks failed" / "Affected: partial") instead, and any
-available-but-unaffected capability is listed as `skipped — not affected by
-changes` rather than being folded into the pass. If nothing is affected (for
-example you only touched a doc file), veris prints "Nothing affected" and
-exits `0` — but that is explicitly **not** a verified result: no checks ran
-at all.
+An `affected` run never prints a bare "Verified". The terminal and report say "Affected checks passed" (or "failed", or "Affected: partial"), and every available-but-unaffected capability is listed as skipped with the reason `not affected by changes`. Touch only a doc and VerisKit prints "Nothing affected" and exits `0`, which is a no-op and not a verified result: no checks ran.
 
 ### `veris watch`
 
 ```bash
 veris watch          # re-run affected checks as files change
-veris watch --poll    # use mtime polling instead of native fs.watch
+veris watch --poll   # use mtime polling instead of native fs.watch
 ```
 
-`watch` runs a full baseline over every available check once, then watches
-the working tree and re-runs only the checks affected by whatever changed
-since the last tick — using Node's built-in `fs.watch` (recursive). **No new
-dependency was added for this.** On platforms where recursive `fs.watch`
-isn't supported, or on filesystems (containers, some network mounts) where
-native change events are unreliable, pass `--poll` to fall back to an
-interval-based scan that diffs file mtimes instead.
+`watch` runs a full baseline over every available check once, then re-runs only the checks affected by whatever changed since the last tick. It uses Node's built-in recursive `fs.watch`, so it adds no dependency. On a platform where recursive `fs.watch` is unavailable, or a filesystem where native events are unreliable (some containers and network mounts), pass `--poll` to diff file mtimes on an interval instead.
 
-Every tick after the baseline uses the same graph-based `unit` narrowing (and
-conservative full-suite fallback) described above for `affected` — the graph
-is rebuilt fresh each tick, so it always reflects the file you just saved,
-not a stale snapshot.
+Each tick reprints the full board and rebuilds the graph fresh, so narrowing reflects the file you just saved. A capability the latest change did not touch keeps its last real result, marked `⟳ cached`. A cached failure stays a failure (`✗`); VerisKit never hides it just because it did not rerun this tick. Press Ctrl-C to stop, and the watcher (or poll loop) closes cleanly with exit `0`.
 
-Each tick reprints the full check board. A capability that wasn't affected by
-the latest change keeps showing its last real result, marked `⟳ cached` — a
-cached **failure stays a failure** (✗); it is never hidden or silently
-dropped just because it didn't rerun this tick. Press Ctrl-C to stop; veris
-closes the watcher (or poll loop) cleanly and exits `0`.
+## Project intelligence
+
+`veris scan` and `veris plan` map your codebase's import graph and turn it into recommendations: what to test, where verification is thin, and which of your changes carry risk. Both are read-only analysis. Neither writes or generates any code.
+
+### `veris scan`
+
+```bash
+veris scan
+```
+
+`scan` finds every source and test file, builds the import graph between them, and lists the source files with the most dependents that no test reaches. It writes the graph to `.veris/graph.json`, a derived cache rebuilt on every run.
+
+`scan` always names the resolver that built the graph, because the two differ in accuracy:
+
+- **`typescript`** runs when your project has a `tsconfig.json` and a `typescript` package that exposes the classic compiler API. VerisKit loads your project's own TypeScript at run time, so it adds no dependency, and it resolves imports the way `tsc` does: `tsconfig` path aliases, extension-mapped specifiers, index resolution.
+- **`scanner`** is the fallback for a project with no TypeScript, no `tsconfig.json`, or a TypeScript 7.x native build that drops the classic compiler API. The scanner reads relative imports only. It follows `./foo` and `../bar/baz` but does not resolve `tsconfig` path aliases or computed dynamic imports, so on an alias-heavy project it can miss edges. `scan` labels the resolver it used, and VerisKit never treats a scanner graph as equal to the TypeScript one. This is also why graph-based narrowing in `affected` and `watch` runs the full suite in scanner mode.
+
+### `veris plan`
+
+```bash
+veris plan               # recommendations from the current graph
+veris plan --base main   # also factor in changes vs another ref
+```
+
+`plan` reads the graph and prioritizes:
+
+- the highest-impact untested files to cover first (the most dependents, reached by no test)
+- gaps in your setup, such as a missing linter or type-check
+- with `--base <ref>`, the changed files that carry risk: high blast radius, and either untested or freshly changed
+
+`plan` recommends. It never writes or generates test code. Generation is a later goal, not something VerisKit does today.
 
 ## Evidence
 
-Every `veris verify` run writes:
+Every `veris verify` run leaves a record:
 
-- A Markdown report under `.veris/reports/verify-<run-id>.md` — project and
-  environment metadata, per-check status/timing/summary, the verdict with
-  its skipped list and reasons, and log references. Paste it straight into a
-  PR.
+- A Markdown report at `.veris/reports/verify-<run-id>.md` with project and environment metadata, per-check status, timing, and summary, the verdict with its skipped list and reasons, and log references. Paste it into a PR.
 - Raw per-check logs and run metadata under `.veris/runs/<run-id>/`.
 
-`.veris/config.json` and `.veris/.gitignore` are meant to be committed;
-`.veris/runs/`, `.veris/reports/`, and `.veris/cache/` are gitignored by
-`veris init`. `.veris/graph.json` (written by [`veris scan`](#project-intelligence))
-is a separate derived cache, rebuilt on every scan — treat it the same way
-and don't commit it.
+Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` writes `.veris/.gitignore` so `runs/`, `reports/`, `cache/`, and `graph.json` stay out of your history.
+
+## What VerisKit does not do yet
+
+VerisKit says what it cannot do as plainly as what it can:
+
+- **No framework route or endpoint detection.** The graph understands imports, not that a file is an Express route or a Next.js page, so it flags an untested module but not an untested endpoint. Planned next.
+- **No test generation.** `plan` tells you what to test. Writing the tests is a later release.
+- **One project root.** A monorepo with several `tsconfig.json` files is not modeled yet. Resolution runs against the root project.
+- **Scanner fallback on plain-JS or TS 7.x-native projects.** The accurate resolver needs the classic TypeScript compiler API. Without it you get the labeled, relative-imports-only graph described above, and no dependency is added to paper over the gap.
+
+## Part of Baseframe Labs
+
+VerisKit is one of four developer tools from [Baseframe Labs](https://www.baseframelabs.com), each answering a different question about your work:
+
+- **[ProjScan](https://www.baseframelabs.com/apps/projscan)** asks: is the repository healthy?
+- **[AgentLoopKit](https://www.baseframelabs.com/apps/agentloopkit)** asks: what should the agent do next?
+- **[AgentFlight](https://www.baseframelabs.com/apps/agentflight)** asks: what did the agent actually do?
+- **VerisKit** asks: can we trust the result?
+
+Each works on its own. VerisKit needs none of the others to verify a change.
 
 ## Design
 
-Full rationale, locked decisions, and the v0.2+ roadmap live in the design
-spec: [`docs/superpowers/specs/2026-07-08-veris-v0.1-design.md`](docs/superpowers/specs/2026-07-08-veris-v0.1-design.md).
+The design specs, locked decisions, and roadmap live in [`docs/superpowers/specs`](docs/superpowers/specs).
 
 ## License
 
