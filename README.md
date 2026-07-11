@@ -190,7 +190,7 @@ veris evidence verify .veris/runs/<run-id>/evidence.json
 This recomputes the digest and reports whether the record was edited or
 corrupted since it was written. An integrity digest is not forgery-proof on its
 own. To prove authorship, publish the digest separately (a CI log or PR) or sign
-it. Cryptographic signing is planned for a later release.
+the record with an Ed25519 key (see Signing below).
 
 Package a run as a single portable file (the record, its report, and its logs,
 each with a digest, plus a bundle digest over everything):
@@ -235,7 +235,7 @@ VerisKit says what it cannot do as plainly as what it can:
 - **No test generation.** `plan` tells you what to test. Writing the tests is a later release.
 - **One project root.** A monorepo with several `tsconfig.json` files is not modeled yet. Resolution runs against the root project.
 - **Scanner fallback on plain-JS or TS 7.x-native projects.** The accurate resolver needs the classic TypeScript compiler API. Without it you get the labeled, relative-imports-only graph described above, and no dependency is added to paper over the gap.
-- **No cryptographic signing.** Evidence carries an integrity digest, not a signature. Keyless signing is planned.
+- **No keyless or identity-bound signing.** Evidence can be signed with a local Ed25519 key (see Signing), but sigstore-style keyless signing that ties a signature to an identity is not built yet.
 
 ## Part of Baseframe Labs
 

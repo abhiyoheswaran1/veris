@@ -24,6 +24,8 @@ describe("vitestRunner", () => {
     expect(check.cmd).toContain(join("node_modules", ".bin", "vitest"));
   });
 
+  // Spawns a real node subprocess; startup can exceed the default 5s test
+  // timeout when the whole suite runs in parallel, so give it room.
   it("classifies a zero exit as passed and writes a log", async () => {
     const result = await vitestRunner.run(
       {
@@ -39,5 +41,5 @@ describe("vitestRunner", () => {
     expect(result.logRef).toBeTruthy();
     // logRef points at a real, readable file.
     expect(() => readFileSync(result.logRef as string, "utf8")).not.toThrow();
-  });
+  }, 20000);
 });
