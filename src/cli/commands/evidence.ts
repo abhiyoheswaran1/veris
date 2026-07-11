@@ -17,7 +17,7 @@ import { isPlain } from "../tty.js";
 
 const HONESTY =
   "An integrity digest confirms the record was not edited or corrupted since it was written.\n" +
-  "It is not forgery-proof on its own: publish the digest separately (CI log, PR) or sign it (planned) to prove authorship.";
+  "It is not forgery-proof on its own: publish the digest separately (CI log, PR) or sign it (veris evidence sign) to prove authorship.";
 
 export async function runEvidenceVerify(
   path: string,

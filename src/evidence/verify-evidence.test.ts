@@ -1,8 +1,15 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
 import { buildRecord } from "./record.js";
 import { generateKeyPair, signDigest } from "./signing.js";
-import { signatureChecks, verifyRecord } from "./verify-evidence.js";
+import {
+  signatureChecks,
+  verifyEvidenceFile,
+  verifyRecord,
+} from "./verify-evidence.js";
 
 function run(): VerificationRun {
   return {
@@ -83,5 +90,30 @@ describe("signatureChecks", () => {
       expectedKeyId: kp.keyId,
     });
     expect(checks.find((c) => c.name === "signer")?.ok).toBe(true);
+  });
+});
+
+describe("verifyEvidenceFile signer assertion vs missing signature", () => {
+  it("fails when a signer is asserted but no signature exists", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-assert-"));
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const path = join(dir, "evidence.json");
+    writeFileSync(path, JSON.stringify(rec));
+    const result = await verifyEvidenceFile(path, {
+      expectedKeyId: "abcd1234",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.signed).toBe(false);
+    expect(result.checks.find((c) => c.name === "signature")?.ok).toBe(false);
+  });
+
+  it("verifies integrity only when unsigned and nothing is asserted", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-plain-"));
+    const rec = buildRecord(run(), null, {}, "0.4.1");
+    const path = join(dir, "evidence.json");
+    writeFileSync(path, JSON.stringify(rec));
+    const result = await verifyEvidenceFile(path);
+    expect(result.ok).toBe(true);
+    expect(result.signed).toBe(false);
   });
 });

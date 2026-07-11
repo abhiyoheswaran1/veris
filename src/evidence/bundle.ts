@@ -83,6 +83,14 @@ export function verifyBundle(
         expectedPubKeyPem: opts.expectedPubKeyPem,
       }),
     );
+  } else if (opts.expectedKeyId || opts.expectedPubKeyPem) {
+    // An explicit signer assertion must not pass on an unsigned bundle.
+    checks.push({
+      name: "signature",
+      ok: false,
+      detail:
+        "a signature was required (--pubkey/--key-id) but the bundle is unsigned",
+    });
   }
 
   return {

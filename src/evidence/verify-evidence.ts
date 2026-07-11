@@ -96,6 +96,11 @@ export async function verifyEvidenceFile(
 
   const result = verifyRecord(parsed as EvidenceRecord);
 
+  // An explicit assertion (--pubkey / --key-id / --sig) demands a signature; it
+  // must never be satisfiable by a missing or stripped one.
+  const assertedSigner = Boolean(
+    opts.expectedKeyId || opts.expectedPubKeyPem || opts.sigPath,
+  );
   const sigPath = opts.sigPath ?? `${path}.sig`;
   if (existsSync(sigPath)) {
     const sig = JSON.parse(await readFile(sigPath, "utf8")) as Signature;
@@ -106,7 +111,14 @@ export async function verifyEvidenceFile(
       }),
     );
     result.signed = true;
-    result.ok = result.checks.every((c) => c.ok);
+  } else if (assertedSigner) {
+    result.checks.push({
+      name: "signature",
+      ok: false,
+      detail:
+        "a signature was required (--pubkey/--key-id/--sig) but none was found",
+    });
   }
+  result.ok = result.checks.every((c) => c.ok);
   return result;
 }
