@@ -11,6 +11,7 @@ import {
   writeReport,
 } from "../../evidence/store.js";
 import { gitAnchor } from "../../git/changes.js";
+import { publishToGitHub } from "../../publish/publish.js";
 import { renderMarkdown } from "../../reporters/markdown.js";
 import { renderRun } from "../../reporters/terminal.js";
 import { VERSION } from "../../version.js";
@@ -19,7 +20,7 @@ const DEFAULT_CHECKS: CapabilityId[] = ["types", "lint", "unit"];
 
 export async function runVerify(
   root: string,
-  opts: { partialOk?: boolean } = {},
+  opts: { partialOk?: boolean; github?: boolean } = {},
 ): Promise<number> {
   const project = await detectProject(root);
   const config = await loadConfig(root);
@@ -40,5 +41,6 @@ export async function runVerify(
   await writeEvidence(runDir, record);
 
   process.stdout.write(`${renderRun(run, record)}\n`);
+  if (opts.github) await publishToGitHub(run, record);
   return verdictExitCode(run.verdict, opts);
 }

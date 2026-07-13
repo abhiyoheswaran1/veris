@@ -11,13 +11,14 @@ import {
   writeReport,
 } from "../../evidence/store.js";
 import { changedFiles, gitAnchor } from "../../git/changes.js";
+import { publishToGitHub } from "../../publish/publish.js";
 import { renderMarkdown } from "../../reporters/markdown.js";
 import { renderRun } from "../../reporters/terminal.js";
 import { VERSION } from "../../version.js";
 
 export async function runAffected(
   root: string,
-  opts: { base?: string; partialOk?: boolean } = {},
+  opts: { base?: string; partialOk?: boolean; github?: boolean } = {},
 ): Promise<number> {
   const project = await detectProject(root);
   const { files } = await changedFiles(root, { base: opts.base });
@@ -81,5 +82,6 @@ export async function runAffected(
 
   process.stdout.write(`${renderRun(run, record)}\n`);
   if (narrowedNote) process.stdout.write(`${narrowedNote}\n`);
+  if (opts.github) await publishToGitHub(run, record);
   return verdictExitCode(run.verdict, opts);
 }

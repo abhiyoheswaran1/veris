@@ -31,10 +31,15 @@ export function buildCli() {
   cli
     .command("verify", "Run the full check set and produce a verdict + report")
     .option("--partial-ok", "Exit 0 even when the verdict is partial")
-    .action(async (opts: { partialOk?: boolean }) => {
+    .option(
+      "--github",
+      "Publish the verdict to the GitHub PR (comment + check run)",
+    )
+    .action(async (opts: { partialOk?: boolean; github?: boolean }) => {
       const { runVerify } = await import("./commands/verify.js");
       process.exitCode = await runVerify(process.cwd(), {
         partialOk: opts.partialOk,
+        github: opts.github,
       });
     });
 
@@ -49,13 +54,24 @@ export function buildCli() {
     .command("affected", "Run only the checks affected by changed files")
     .option("--base <ref>", "Compare against a git ref instead of HEAD")
     .option("--partial-ok", "Exit 0 even when the verdict is partial")
-    .action(async (opts: { base?: string; partialOk?: boolean }) => {
-      const { runAffected } = await import("./commands/affected.js");
-      process.exitCode = await runAffected(process.cwd(), {
-        base: opts.base,
-        partialOk: opts.partialOk,
-      });
-    });
+    .option(
+      "--github",
+      "Publish the verdict to the GitHub PR (comment + check run)",
+    )
+    .action(
+      async (opts: {
+        base?: string;
+        partialOk?: boolean;
+        github?: boolean;
+      }) => {
+        const { runAffected } = await import("./commands/affected.js");
+        process.exitCode = await runAffected(process.cwd(), {
+          base: opts.base,
+          partialOk: opts.partialOk,
+          github: opts.github,
+        });
+      },
+    );
 
   cli
     .command("watch", "Re-run affected checks as files change (Ctrl-C to stop)")
@@ -145,6 +161,17 @@ export function buildCli() {
         }
       },
     );
+
+  cli
+    .command(
+      "badge",
+      "Write a shields.io endpoint JSON from the latest verdict",
+    )
+    .option("--out <file>", "Output path (default .veris/badge.json)")
+    .action(async (opts: { out?: string }) => {
+      const { runBadge } = await import("./commands/badge.js");
+      process.exitCode = await runBadge(process.cwd(), { out: opts.out });
+    });
 
   return { raw: cli, version: VERSION };
 }
