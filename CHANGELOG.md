@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 — 2026-07-13
+
+### Added
+- Publish to GitHub. `veris verify --github` posts and updates one sticky PR comment with the verdict and report, and creates a Check Run (verified passes, failed fails, partial is neutral). Token read from `GITHUB_TOKEN`; publishing never changes the verdict or exit code. `veris badge` writes a shields.io endpoint JSON. GitHub API over built-in fetch, no new dependency.
+- Browser tests. A real Playwright runner, opt-in with `veris verify --browser` (or a `browser` entry in `.veris/config.json`). Detected Playwright now shows as an available capability.
+- `veris log` lists past runs from the stored evidence records, and `veris log --flaky` flags checks that both passed and failed across recent runs. Local per-machine history.
+
 ## 0.4.1 — 2026-07-10
 
 ### Added

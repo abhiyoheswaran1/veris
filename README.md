@@ -237,6 +237,64 @@ VerisKit says what it cannot do as plainly as what it can:
 - **Scanner fallback on plain-JS or TS 7.x-native projects.** The accurate resolver needs the classic TypeScript compiler API. Without it you get the labeled, relative-imports-only graph described above, and no dependency is added to paper over the gap.
 - **No keyless or identity-bound signing.** Evidence can be signed with a local Ed25519 key (see Signing), but sigstore-style keyless signing that ties a signature to an identity is not built yet.
 
+## Publish to a pull request
+
+In CI, surface the verdict where reviewers look. Opt in with `--github`; VerisKit
+reads `GITHUB_TOKEN` from the environment and never stores it.
+
+```bash
+veris verify --github   # posts/updates a sticky PR comment + a Check Run
+```
+
+It edits one comment on re-runs (no spam) and creates a Check Run whose
+conclusion follows the verdict (verified passes, failed fails, partial is
+neutral). Publishing is a side channel: if there is no token or PR, VerisKit
+prints a notice and the exit code still reflects the verdict, and a GitHub API
+error is reported but never changes the result.
+
+The workflow needs permission to write them:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+```
+
+For a README badge, write a shields.io endpoint file:
+
+```bash
+veris badge   # writes .veris/badge.json
+```
+
+```markdown
+![VerisKit](https://img.shields.io/endpoint?url=<raw-url-to>/.veris/badge.json)
+```
+
+## Browser tests
+
+VerisKit can run your Playwright suite as part of the verdict. It is opt-in, so
+a normal `veris verify` stays fast:
+
+```bash
+veris verify --browser   # also runs `playwright test`, folded into the verdict
+```
+
+When Playwright is detected, `veris doctor` lists `browser` as available. You can
+also add `browser` to the `checks` array in `.veris/config.json` to run it every
+time.
+
+## History
+
+Every run leaves an evidence record, so VerisKit can show you a trend:
+
+```bash
+veris log            # past runs, newest first
+veris log --flaky    # checks that both passed and failed across recent runs
+```
+
+History is local to your machine (the `.veris/runs` directory is gitignored).
+
 ## Part of Baseframe Labs
 
 VerisKit is one of four developer tools from [Baseframe Labs](https://www.baseframelabs.com), each answering a different question about your work:
