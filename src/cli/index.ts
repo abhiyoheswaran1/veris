@@ -35,13 +35,21 @@ export function buildCli() {
       "--github",
       "Publish the verdict to the GitHub PR (comment + check run)",
     )
-    .action(async (opts: { partialOk?: boolean; github?: boolean }) => {
-      const { runVerify } = await import("./commands/verify.js");
-      process.exitCode = await runVerify(process.cwd(), {
-        partialOk: opts.partialOk,
-        github: opts.github,
-      });
-    });
+    .option("--browser", "Also run browser tests (Playwright), when available")
+    .action(
+      async (opts: {
+        partialOk?: boolean;
+        github?: boolean;
+        browser?: boolean;
+      }) => {
+        const { runVerify } = await import("./commands/verify.js");
+        process.exitCode = await runVerify(process.cwd(), {
+          partialOk: opts.partialOk,
+          github: opts.github,
+          browser: opts.browser,
+        });
+      },
+    );
 
   cli
     .command("report", "Print the latest verification report")

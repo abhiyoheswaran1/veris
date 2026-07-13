@@ -1,6 +1,6 @@
 import { detectProject } from "../../config/detect.js";
 import { loadConfig } from "../../config/load.js";
-import type { CapabilityId } from "../../core/model.js";
+import type { CapabilityId, Project } from "../../core/model.js";
 import { runChecks } from "../../core/orchestrator.js";
 import { verdictExitCode } from "../../core/verdict.js";
 import { buildRecord } from "../../evidence/record.js";
@@ -18,13 +18,26 @@ import { VERSION } from "../../version.js";
 
 const DEFAULT_CHECKS: CapabilityId[] = ["types", "lint", "unit"];
 
+export function resolveChecks(
+  configChecks: CapabilityId[] | undefined,
+  project: Project,
+  opts: { browser?: boolean },
+): CapabilityId[] {
+  let checks = configChecks?.length ? configChecks : DEFAULT_CHECKS;
+  if (opts.browser && !checks.includes("browser")) {
+    const cap = project.capabilities.find((c) => c.id === "browser");
+    if (cap?.available) checks = [...checks, "browser"];
+  }
+  return checks;
+}
+
 export async function runVerify(
   root: string,
-  opts: { partialOk?: boolean; github?: boolean } = {},
+  opts: { partialOk?: boolean; github?: boolean; browser?: boolean } = {},
 ): Promise<number> {
   const project = await detectProject(root);
   const config = await loadConfig(root);
-  const checks = config?.checks?.length ? config.checks : DEFAULT_CHECKS;
+  const checks = resolveChecks(config?.checks, project, opts);
   const run = await runChecks(project, checks, root);
 
   const git = await gitAnchor(root);

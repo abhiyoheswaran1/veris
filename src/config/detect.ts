@@ -82,13 +82,13 @@ function detectLint(root: string, has: (n: string) => boolean): Capability {
 }
 
 function detectBrowser(root: string, has: (n: string) => boolean): Capability {
-  if (has("@playwright/test") || existsSync(join(root, "playwright.config.ts")))
-    return {
-      id: "browser",
-      available: false,
-      runner: "playwright",
-      reason: "detected; browser execution deferred to v0.5",
-    };
+  if (
+    has("@playwright/test") ||
+    existsSync(join(root, "playwright.config.ts")) ||
+    existsSync(join(root, "playwright.config.js"))
+  ) {
+    return { id: "browser", available: true, runner: "playwright" };
+  }
   return {
     id: "browser",
     available: false,

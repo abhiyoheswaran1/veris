@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { detectProject } from "./detect.js";
@@ -23,5 +26,23 @@ describe("detectProject", () => {
     expect(cap(p, "unit").reason).toBeTruthy();
     expect(cap(p, "types").available).toBe(false);
     expect(cap(p, "lint").available).toBe(false);
+  });
+});
+
+describe("detectBrowser", () => {
+  it("marks browser available with the playwright runner when a config exists", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-pw-detect-"));
+    writeFileSync(join(dir, "playwright.config.ts"), "export default {};\n");
+    const project = await detectProject(dir);
+    const browser = project.capabilities.find((c) => c.id === "browser");
+    expect(browser?.available).toBe(true);
+    expect(browser?.runner).toBe("playwright");
+  });
+
+  it("marks browser unavailable without playwright", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-nopw-"));
+    const project = await detectProject(dir);
+    const browser = project.capabilities.find((c) => c.id === "browser");
+    expect(browser?.available).toBe(false);
   });
 });
