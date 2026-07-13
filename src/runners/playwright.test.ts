@@ -52,4 +52,20 @@ describe("playwrightRunner", () => {
     expect(result.status).toBe("passed");
     expect(result.counts).toEqual({ passed: 2, failed: 0, total: 2 });
   }, 20000);
+
+  it("does not claim passed when the output is unparseable, even on a zero exit", async () => {
+    const runDir = mkdtempSync(join(tmpdir(), "veris-pw-bad-"));
+    const result = await playwrightRunner.run(
+      {
+        id: "browser",
+        title: "Browser tests",
+        runner: "playwright",
+        cmd: process.execPath,
+        args: ["-e", "process.stdout.write('not json at all')"],
+      },
+      { root: runDir, runDir },
+    );
+    expect(result.status).toBe("unknown");
+    expect(result.counts).toBeUndefined();
+  }, 20000);
 });

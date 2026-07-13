@@ -40,11 +40,16 @@ export const playwrightRunner: Runner = {
     const output = [r.stdout, r.stderr].filter(Boolean).join("\n").trim();
     const logRef = await writeLog(ctx.runDir, check.id, `${output}\n`);
     const stats = parsePlaywrightStats(r.stdout);
-    const status: CheckResult["status"] = r.timedOut
-      ? "unknown"
-      : r.code === 0 && (stats?.unexpected ?? 0) === 0
-        ? "passed"
-        : "failed";
+    let status: CheckResult["status"];
+    if (r.timedOut) {
+      status = "unknown";
+    } else if (stats) {
+      status =
+        r.code === 0 && (stats.unexpected ?? 0) === 0 ? "passed" : "failed";
+    } else {
+      // Exit code alone cannot confirm a pass without parseable results.
+      status = r.code === 0 ? "unknown" : "failed";
+    }
     const result: CheckResult = {
       checkId: "browser",
       status,
@@ -54,7 +59,9 @@ export const playwrightRunner: Runner = {
           ? "browser tests passed"
           : r.timedOut
             ? "timed out"
-            : "browser tests failed",
+            : status === "unknown"
+              ? "browser tests ran but the results could not be parsed"
+              : "browser tests failed",
       logRef,
     };
     if (stats) {
