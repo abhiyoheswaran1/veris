@@ -24,9 +24,17 @@ describe("lint runners", () => {
     } as Capability);
     expect(c.id).toBe("lint");
   });
-  it("registry exposes all six runners", () => {
+  it("registry exposes all seven runners", () => {
     expect(Object.keys(runners).sort()).toEqual(
-      ["biome", "eslint", "jest", "node-test", "tsc", "vitest"].sort(),
+      [
+        "biome",
+        "eslint",
+        "jest",
+        "node-test",
+        "playwright",
+        "tsc",
+        "vitest",
+      ].sort(),
     );
   });
 });
