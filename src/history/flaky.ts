@@ -9,7 +9,7 @@ export interface FlakyCheck {
 export function detectFlaky(records: EvidenceRecord[]): FlakyCheck[] {
   const byId = new Map<CapabilityId, CheckStatus[]>();
   for (const rec of records) {
-    for (const c of rec.checks) {
+    for (const c of rec.checks ?? []) {
       const arr = byId.get(c.id) ?? [];
       arr.push(c.status);
       byId.set(c.id, arr);

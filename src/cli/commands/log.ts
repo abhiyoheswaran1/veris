@@ -5,7 +5,10 @@ export async function runLog(
   root: string,
   opts: { limit?: number; flaky?: boolean } = {},
 ): Promise<number> {
-  const limit = opts.limit ?? 20;
+  const limit =
+    Number.isFinite(opts.limit) && (opts.limit as number) > 0
+      ? (opts.limit as number)
+      : 20;
   const records = loadRuns(root, limit);
   if (records.length === 0) {
     process.stdout.write("No runs yet. Run `veris verify` first.\n");
@@ -31,7 +34,9 @@ export async function runLog(
 
   for (const rec of records) {
     const date = rec.startedAt.slice(0, 19).replace("T", " ");
-    const checks = rec.checks.map((c) => `${c.id}:${c.status}`).join(" ");
+    const checks = (rec.checks ?? [])
+      .map((c) => `${c.id}:${c.status}`)
+      .join(" ");
     const commit = rec.git ? rec.git.commit.slice(0, 7) : "-";
     process.stdout.write(
       `${date}  ${rec.verdict.state.padEnd(9)} ${checks}  ${commit}\n`,

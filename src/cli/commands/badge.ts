@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import type { EvidenceRecord } from "../../evidence/record.js";
 import { latestRunDir } from "../../evidence/store.js";
 import { buildBadge } from "../../publish/badge.js";
@@ -24,6 +24,7 @@ export async function runBadge(
     return 1;
   }
   const out = opts.out ?? join(root, ".veris", "badge.json");
+  await mkdir(dirname(out), { recursive: true });
   await writeFile(
     out,
     `${JSON.stringify(buildBadge(record.verdict), null, 2)}\n`,

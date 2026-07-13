@@ -27,7 +27,7 @@ function mockFetch(handlers: (url: string, init: RequestInit) => unknown) {
 
 describe("upsertComment", () => {
   it("PATCHes an existing marked comment", async () => {
-    const calls = mockFetch((url, init) =>
+    const calls = mockFetch((_url, init) =>
       init.method === undefined || init.method === "GET"
         ? [{ id: 9, body: "old <!-- veriskit-report --> x" }]
         : {},
@@ -38,7 +38,7 @@ describe("upsertComment", () => {
   });
 
   it("POSTs a new comment when none is marked", async () => {
-    const calls = mockFetch((url, init) =>
+    const calls = mockFetch((_url, init) =>
       init.method === undefined || init.method === "GET" ? [] : {},
     );
     await upsertComment(ctx, "new body");
