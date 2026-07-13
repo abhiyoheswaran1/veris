@@ -1,0 +1,26 @@
+name: PR Verify
+
+# Dogfood: VerisKit verifies its own pull requests and publishes the verdict
+# back to the PR (a sticky comment + a Check Run) via `veris verify --github`.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write # post/update the sticky verdict comment
+  checks: write # create the VerisKit Check Run
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build
+      - name: Verify and publish the verdict to the PR
+        run: node bin/veris verify --github
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 — 2026-07-13
+
+### Changed
+- `--github` publish errors now include GitHub's own message (for example "Resource not accessible by integration" when the workflow token lacks `pull-requests: write` or `checks: write`), so a failed publish is diagnosable. The token still never appears in any error.
+- `homepage` now points to the VerisKit product page.
+
 ## 0.5.0 — 2026-07-13
 
 ### Added

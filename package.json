@@ -1,6 +1,6 @@
 {
   "name": "veriskit",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "The fastest way to prove your software works — a zero-config verification CLI.",
   "scripts": {
     "test": "vitest run",
@@ -19,7 +19,7 @@
   "bugs": {
     "url": "https://github.com/abhiyoheswaran1/veris/issues"
   },
-  "homepage": "https://github.com/abhiyoheswaran1/veris#readme",
+  "homepage": "https://www.baseframelabs.com/apps/veriskit",
   "bin": {
     "veris": "bin/veris"
   },

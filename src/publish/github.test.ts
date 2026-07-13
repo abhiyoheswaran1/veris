@@ -76,4 +76,23 @@ describe("GitHubApiError", () => {
       expect(e.status).toBe(403);
     });
   });
+
+  it("surfaces GitHub's error message but not the token", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 403,
+        json: async () => ({
+          message: "Resource not accessible by integration",
+        }),
+      })),
+    );
+    await expect(upsertComment(ctx, "x")).rejects.toThrow(
+      "Resource not accessible by integration",
+    );
+    await upsertComment(ctx, "x").catch((e: GitHubApiError) => {
+      expect(e.message).not.toContain("sekret");
+    });
+  });
 });

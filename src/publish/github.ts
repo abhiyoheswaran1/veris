@@ -32,14 +32,23 @@ async function gh(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    // The token is never included; only method, path, and status.
+    // Surface GitHub's own error message (e.g. "Resource not accessible by
+    // integration" for a missing permission) so a failure is diagnosable. The
+    // token appears only in the request header, never in an error body.
     const path = url.replace("https://api.github.com", "");
+    let detail = "";
+    try {
+      const errBody = (await res.json()) as { message?: string };
+      if (errBody?.message) detail = `: ${errBody.message}`;
+    } catch {
+      // no JSON error body
+    }
     throw new GitHubApiError(
       res.status,
-      `GitHub API ${method} ${path} -> ${res.status}`,
+      `GitHub API ${method} ${path} -> ${res.status}${detail}`,
     );
   }
-  return res.json();
+  return res.status === 204 ? null : res.json();
 }
 
 function repoBase(ctx: PublishContext): string {
