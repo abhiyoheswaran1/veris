@@ -181,6 +181,18 @@ export function buildCli() {
       process.exitCode = await runBadge(process.cwd(), { out: opts.out });
     });
 
+  cli
+    .command("log", "List past verification runs (local history)")
+    .option("--limit <n>", "How many runs to show (default 20)")
+    .option("--flaky", "Show only checks that flip-flop across runs")
+    .action(async (opts: { limit?: string; flaky?: boolean }) => {
+      const { runLog } = await import("./commands/log.js");
+      process.exitCode = await runLog(process.cwd(), {
+        limit: opts.limit ? Number(opts.limit) : undefined,
+        flaky: opts.flaky,
+      });
+    });
+
   return { raw: cli, version: VERSION };
 }
 
