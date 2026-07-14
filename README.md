@@ -271,6 +271,27 @@ veris badge   # writes .veris/badge.json
 ![VerisKit](https://img.shields.io/endpoint?url=<raw-url-to>/.veris/badge.json)
 ```
 
+## Use with AI agents (MCP)
+
+VerisKit ships an MCP server, `veriskit-mcp`, so an agent can verify a change
+and read evidence as tool calls. It exposes seven tools: `veris_doctor`,
+`veris_scan`, `veris_plan`, `veris_log`, and `veris_evidence_verify` (read-only),
+plus `veris_verify` and `veris_affected`, which run the project's test tooling.
+
+The `veriskit` CLI keeps its two runtime dependencies; the MCP server is a
+separate package that uses the official MCP SDK. Point your MCP client at it:
+
+```json
+{
+  "mcpServers": {
+    "veriskit": { "command": "npx", "args": ["-y", "veriskit-mcp"] }
+  }
+}
+```
+
+Every tool returns the honest three-state verdict; `veris_verify` and
+`veris_affected` execute your test runners and write evidence under `.veris/`.
+
 ## Browser tests
 
 VerisKit can run your Playwright suite as part of the verdict. It is opt-in, so

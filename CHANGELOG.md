@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0 — 2026-07-14
+
+### Added
+- `veriskit-mcp`, a Model Context Protocol server exposing VerisKit over stdio with seven tools (doctor, scan, plan, log, evidence_verify, verify, affected), publishable to the MCP registry. The `veriskit` CLI keeps its two runtime dependencies; the MCP SDK lives only in `veriskit-mcp`.
+- `veriskit` now has a programmatic API (`verifyProject`, `affectedProject`, and the core detect/graph/history/evidence functions), so it can be used as a library.
+
 ## 0.5.1 — 2026-07-13
 
 ### Changed

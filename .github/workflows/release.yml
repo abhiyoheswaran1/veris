@@ -52,6 +52,24 @@ jobs:
             echo "published=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Build and publish veriskit-mcp if this version is new
+        run: |
+          MVER=$(node -p "require('./mcp/package.json').version")
+          if npm view "veriskit-mcp@$MVER" version > /dev/null 2>&1; then
+            echo "veriskit-mcp@$MVER already published — nothing to do."
+          else
+            npm run build -w veriskit-mcp
+            # The workspace pins veriskit to "file:.." for local dev; the
+            # published package must depend on the concrete published version.
+            npm pkg set "dependencies.veriskit=$MVER" -w veriskit-mcp
+            # First publish of this new package needs OIDC trusted publishing
+            # configured on npm; until then this step is expected to fail and
+            # the maintainer publishes veriskit-mcp once manually. Do not fail
+            # the whole release if the mcp publish fails.
+            npm publish -w veriskit-mcp --provenance --access public \
+              || echo "veriskit-mcp publish failed (a first publish needs manual OIDC setup; see the report)."
+          fi
+
       - name: Create GitHub Release
         if: steps.publish.outputs.published == 'true'
         env:
