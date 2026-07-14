@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../../core/model.js";
-import { resolveChecks } from "./verify.js";
+import { resolveChecks } from "../../core/orchestrate.js";
 
 function project(browserAvailable: boolean): Project {
   return {
