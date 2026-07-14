@@ -8,6 +8,11 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts", "test/**/*.test.ts", "mcp/src/**/*.test.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "test/**/*.test.ts",
+      "mcp/*.test.ts",
+      "mcp/src/**/*.test.ts",
+    ],
   },
 });
