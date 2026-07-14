@@ -1,4 +1,5 @@
 import {
+  affectedProject,
   analyze,
   buildGraph,
   detectFlaky,
@@ -6,6 +7,7 @@ import {
   getEnvironmentInfo,
   loadRuns,
   verifyEvidenceFile,
+  verifyProject,
 } from "veriskit";
 import { fail, json, root, type ToolResult } from "./format.js";
 
@@ -85,4 +87,53 @@ export async function evidenceVerifyHandler(input: {
       `cannot read evidence at ${input.file}: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
+}
+
+export async function verifyHandler(input: {
+  path?: string;
+  partialOk?: boolean;
+  browser?: boolean;
+}): Promise<ToolResult> {
+  const { run, record } = await verifyProject(root(input), {
+    partialOk: input.partialOk,
+    browser: input.browser,
+  });
+  return json({
+    verdict: run.verdict.state,
+    skipped: run.verdict.skipped,
+    reasons: run.verdict.reasons,
+    checks: run.results.map((r) => ({
+      id: r.checkId,
+      status: r.status,
+      durationMs: r.durationMs,
+      summary: r.summary,
+    })),
+    digest: record.digest,
+    git: record.git,
+  });
+}
+
+export async function affectedHandler(input: {
+  path?: string;
+  base?: string;
+}): Promise<ToolResult> {
+  const outcome = await affectedProject(root(input), { base: input.base });
+  if (outcome.nothingAffected || !outcome.run || !outcome.record) {
+    return json({
+      nothingAffected: true,
+      note: outcome.note,
+      changedCount: outcome.changedCount,
+    });
+  }
+  return json({
+    verdict: outcome.run.verdict.state,
+    note: outcome.note,
+    changedCount: outcome.changedCount,
+    checks: outcome.run.results.map((r) => ({
+      id: r.checkId,
+      status: r.status,
+      summary: r.summary,
+    })),
+    digest: outcome.record.digest,
+  });
 }

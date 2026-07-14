@@ -1,8 +1,14 @@
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { doctorHandler, logHandler, scanHandler } from "./tools.js";
+import {
+  doctorHandler,
+  logHandler,
+  scanHandler,
+  verifyHandler,
+} from "./tools.js";
 
 function tinyProject(): string {
   const dir = mkdtempSync(join(tmpdir(), "veris-mcp-"));
@@ -39,4 +45,31 @@ describe("read-only tool handlers", () => {
     const out = parse(await logHandler({ path: dir })) as { runs: unknown[] };
     expect(out.runs).toEqual([]);
   });
+});
+
+function tinyGitProject(): string {
+  const dir = mkdtempSync(join(tmpdir(), "veris-mcp-git-"));
+  writeFileSync(join(dir, "package.json"), JSON.stringify({ name: "t" }));
+  writeFileSync(join(dir, "a.js"), "export const a = 1;\n");
+  const run = (args: string[]) => execFileSync("git", args, { cwd: dir });
+  run(["init", "-q"]);
+  run(["config", "user.email", "t@t.co"]);
+  run(["config", "user.name", "t"]);
+  run(["add", "."]);
+  run(["commit", "-qm", "init"]);
+  return dir;
+}
+
+describe("verify tool handler", () => {
+  it("returns a verdict and per-check results", async () => {
+    const dir = tinyGitProject();
+    const out = parse(await verifyHandler({ path: dir })) as {
+      verdict: string;
+      checks: unknown[];
+      digest: string;
+    };
+    expect(out.verdict).toBeDefined();
+    expect(Array.isArray(out.checks)).toBe(true);
+    expect(out.digest).toMatch(/^sha256:/);
+  }, 30000);
 });
