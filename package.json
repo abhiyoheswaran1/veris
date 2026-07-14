@@ -20,6 +20,16 @@
     "url": "https://github.com/abhiyoheswaran1/veris/issues"
   },
   "homepage": "https://www.baseframelabs.com/apps/veriskit",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "veris": "bin/veris"
   },
