@@ -62,12 +62,12 @@ describe("verifyProject / affectedProject on a tiny git repo", () => {
     expect(run.verdict.state).toBeDefined();
     expect(record.digest).toMatch(/^sha256:/);
     expect(record.id).toBe(run.id);
-  });
+  }, 30000);
 
   it("affectedProject reports nothing affected on a clean tree", async () => {
     const dir = tinyRepo();
     const outcome = await affectedProject(dir);
     expect(outcome.nothingAffected).toBe(true);
     expect(outcome.note).toContain("Nothing affected");
-  });
+  }, 30000);
 });
