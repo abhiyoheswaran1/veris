@@ -1,7 +1,10 @@
 {
   "name": "veriskit",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "The fastest way to prove your software works — a zero-config verification CLI.",
+  "workspaces": [
+    "mcp"
+  ],
   "scripts": {
     "test": "vitest run",
     "build": "tsup",

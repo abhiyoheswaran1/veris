@@ -1,0 +1,27 @@
+{
+  "name": "veriskit-mcp",
+  "version": "0.6.0",
+  "description": "Model Context Protocol server for VerisKit: verify software and check evidence over MCP.",
+  "type": "module",
+  "license": "MIT",
+  "mcpName": "io.github.abhiyoheswaran1/veriskit",
+  "bin": {
+    "veriskit-mcp": "bin/veriskit-mcp"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "server.json"
+  ],
+  "scripts": {
+    "build": "tsup"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "veriskit": "file:..",
+    "zod": "^3.25.0"
+  }
+}

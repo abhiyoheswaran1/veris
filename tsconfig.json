@@ -8,11 +8,12 @@
     "noUncheckedIndexedAccess": true,
     "declaration": true,
     "outDir": "dist",
-    "rootDir": "src",
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": { "veriskit": ["./src/index.ts"] }
   },
-  "include": ["src"],
+  "include": ["src", "mcp/src"],
   "exclude": ["dist", "node_modules", "test/fixtures"]
 }

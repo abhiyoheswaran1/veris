@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+import("../dist/server.js")
+  .then(({ main }) => main())
+  .catch((e) => {
+    console.error("veriskit-mcp:", e instanceof Error ? e.message : String(e));
+    process.exit(1);
+  });
