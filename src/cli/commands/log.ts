@@ -1,3 +1,4 @@
+import { splitKey } from "../../core/model.js";
 import { detectFlaky } from "../../history/flaky.js";
 import { loadRuns } from "../../history/read.js";
 
@@ -27,7 +28,9 @@ export async function runLog(
       `Flaky checks (both passed and failed in the last ${records.length} run(s), newest first):\n`,
     );
     for (const f of flaky) {
-      process.stdout.write(`  ${f.id.padEnd(8)} ${f.statuses.join(" ")}\n`);
+      process.stdout.write(
+        `  ${splitKey(f.id).id.padEnd(8)} ${f.statuses.join(" ")}\n`,
+      );
     }
     return 0;
   }
@@ -35,7 +38,7 @@ export async function runLog(
   for (const rec of records) {
     const date = rec.startedAt.slice(0, 19).replace("T", " ");
     const checks = (rec.checks ?? [])
-      .map((c) => `${c.id}:${c.status}`)
+      .map((c) => `${splitKey(c.id).id}:${c.status}`)
       .join(" ");
     const commit = rec.git ? rec.git.commit.slice(0, 7) : "-";
     process.stdout.write(
