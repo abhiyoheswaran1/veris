@@ -8,6 +8,10 @@ import { sha256 } from "./record.js";
 
 let counter = 0;
 
+function logFileName(checkId: string): string {
+  return `${checkId.replace(/:/g, "-")}.log`;
+}
+
 export function newRunId(): string {
   counter += 1;
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -25,7 +29,7 @@ export async function writeLog(
   checkId: string,
   content: string,
 ): Promise<string> {
-  const ref = join(runDir, `${checkId}.log`);
+  const ref = join(runDir, logFileName(checkId));
   await writeFile(ref, content, "utf8");
   return ref;
 }
@@ -73,7 +77,7 @@ export async function readRunLogs(
   const out: Record<string, string> = {};
   for (const id of checkIds) {
     try {
-      out[id] = await readFile(join(runDir, `${id}.log`), "utf8");
+      out[id] = await readFile(join(runDir, logFileName(id)), "utf8");
     } catch {
       // no log for this check
     }

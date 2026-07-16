@@ -1,4 +1,5 @@
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -61,6 +62,15 @@ describe("evidence store", () => {
     const ref = await writeReport(root, "abc", "# report");
     expect(existsSync(ref)).toBe(true);
     expect(ref).toContain(join(".veris", "reports"));
+  });
+});
+
+describe("writeLog", () => {
+  it("sanitizes ':' out of the log filename", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-log-"));
+    const ref = await writeLog(dir, "unit:js", "hello\n");
+    expect(ref.endsWith("unit-js.log")).toBe(true);
+    expect(await readFile(ref, "utf8")).toBe("hello\n");
   });
 });
 
