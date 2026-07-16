@@ -8,6 +8,7 @@ import { parsePlaywrightStats, playwrightRunner } from "./playwright.js";
 const project = { root: "/tmp/x", packageManager: "npm" } as Project;
 const cap: Capability = {
   id: "browser",
+  language: "js",
   available: true,
   runner: "playwright",
 };

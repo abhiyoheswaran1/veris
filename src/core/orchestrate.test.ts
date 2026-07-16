@@ -18,8 +18,13 @@ function project(browserAvailable: boolean): Project {
     languages: [],
     scripts: {},
     capabilities: [
-      { id: "unit", available: true, runner: "vitest" },
-      { id: "browser", available: browserAvailable, runner: "playwright" },
+      { id: "unit", language: "js", available: true, runner: "vitest" },
+      {
+        id: "browser",
+        language: "js",
+        available: browserAvailable,
+        runner: "playwright",
+      },
     ],
   };
 }

@@ -3,9 +3,14 @@ import type { Capability, CheckResult } from "./model.js";
 import { computeVerdict, verdictExitCode } from "./verdict.js";
 
 const caps: Capability[] = [
-  { id: "types", available: true, runner: "tsc" },
-  { id: "unit", available: true, runner: "vitest" },
-  { id: "lint", available: false, reason: "no linter configured" },
+  { id: "types", language: "js", available: true, runner: "tsc" },
+  { id: "unit", language: "js", available: true, runner: "vitest" },
+  {
+    id: "lint",
+    language: "js",
+    available: false,
+    reason: "no linter configured",
+  },
 ];
 
 const res = (
@@ -41,8 +46,8 @@ describe("computeVerdict", () => {
 
   it("verified only when all available capabilities passed and none skipped", () => {
     const allCaps: Capability[] = [
-      { id: "types", available: true, runner: "tsc" },
-      { id: "unit", available: true, runner: "vitest" },
+      { id: "types", language: "js", available: true, runner: "tsc" },
+      { id: "unit", language: "js", available: true, runner: "vitest" },
     ];
     const v = computeVerdict(
       [res("types", "passed"), res("unit", "passed")],
@@ -54,9 +59,9 @@ describe("computeVerdict", () => {
 
   it("partial when an available capability's runner is unregistered (skipped result)", () => {
     const availableCaps: Capability[] = [
-      { id: "types", available: true, runner: "tsc" },
-      { id: "unit", available: true, runner: "vitest" },
-      { id: "lint", available: true, runner: "biome" },
+      { id: "types", language: "js", available: true, runner: "tsc" },
+      { id: "unit", language: "js", available: true, runner: "vitest" },
+      { id: "lint", language: "js", available: true, runner: "biome" },
     ];
     const v = computeVerdict(
       [
@@ -79,7 +84,14 @@ describe("computeVerdict", () => {
   it("partial when a requested capability outside the old CHECKED set is unavailable", () => {
     const v = computeVerdict(
       [],
-      [{ id: "browser", available: false, reason: "deferred to v0.5" }],
+      [
+        {
+          id: "browser",
+          language: "js",
+          available: false,
+          reason: "deferred to v0.5",
+        },
+      ],
     );
     expect(v.state).toBe("partial");
     expect(v.skipped).toContain("browser");
@@ -87,9 +99,9 @@ describe("computeVerdict", () => {
 
   it("partial when an available capability produced no result at all", () => {
     const availableCaps: Capability[] = [
-      { id: "types", available: true, runner: "tsc" },
-      { id: "unit", available: true, runner: "vitest" },
-      { id: "lint", available: true, runner: "biome" },
+      { id: "types", language: "js", available: true, runner: "tsc" },
+      { id: "unit", language: "js", available: true, runner: "vitest" },
+      { id: "lint", language: "js", available: true, runner: "biome" },
     ];
     const v = computeVerdict(
       [res("types", "passed"), res("unit", "passed")],

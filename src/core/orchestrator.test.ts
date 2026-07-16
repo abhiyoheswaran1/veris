@@ -32,7 +32,12 @@ describe("runChecks", () => {
       languages: ["javascript"],
       scripts: {},
       capabilities: [
-        { id: "lint", available: true, runner: "unregistered-linter" },
+        {
+          id: "lint",
+          language: "js",
+          available: true,
+          runner: "unregistered-linter",
+        },
       ],
     } as Project;
 
@@ -54,9 +59,19 @@ describe("runChecks", () => {
       languages: ["typescript"],
       scripts: {},
       capabilities: [
-        { id: "types", available: true, runner: "tsc" },
-        { id: "lint", available: true, runner: "unregistered-linter" },
-        { id: "unit", available: false, reason: "no test runner detected" },
+        { id: "types", language: "js", available: true, runner: "tsc" },
+        {
+          id: "lint",
+          language: "js",
+          available: true,
+          runner: "unregistered-linter",
+        },
+        {
+          id: "unit",
+          language: "js",
+          available: false,
+          reason: "no test runner detected",
+        },
       ],
     } as Project;
 

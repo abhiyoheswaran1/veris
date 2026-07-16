@@ -53,8 +53,8 @@ function sampleRun(): VerificationRun {
       languages: ["ts"],
       scripts: {},
       capabilities: [
-        { id: "unit", available: true, runner: "vitest" },
-        { id: "types", available: true, runner: "tsc" },
+        { id: "unit", language: "js", available: true, runner: "vitest" },
+        { id: "types", language: "js", available: true, runner: "tsc" },
       ],
     },
     results: [

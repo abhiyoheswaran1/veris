@@ -6,6 +6,7 @@ export type Language = "js" | "python" | "go"; // "js" covers TypeScript
 
 export interface Capability {
   id: CapabilityId;
+  language: Language;
   available: boolean;
   runner?: string; // e.g. "tsc", "vitest", "eslint", "biome", "playwright"
   reason?: string; // why unavailable/skipped

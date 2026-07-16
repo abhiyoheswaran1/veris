@@ -6,7 +6,12 @@ import type { Capability, Project } from "../core/model.js";
 import { vitestRunner } from "./vitest.js";
 
 const project = { root: "/tmp/x", packageManager: "npm" } as Project;
-const cap: Capability = { id: "unit", available: true, runner: "vitest" };
+const cap: Capability = {
+  id: "unit",
+  language: "js",
+  available: true,
+  runner: "vitest",
+};
 
 let runDir: string;
 
