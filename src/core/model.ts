@@ -24,6 +24,8 @@ export interface Project {
 
 export interface Check {
   id: CapabilityId;
+  language: Language;
+  key: string;
   title: string;
   runner: string;
   cmd: string;

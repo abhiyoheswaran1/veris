@@ -1,4 +1,10 @@
-import type { Capability, Check, CheckResult, Project } from "../core/model.js";
+import {
+  type Capability,
+  type Check,
+  type CheckResult,
+  checkKey,
+  type Project,
+} from "../core/model.js";
 import { writeLog } from "../evidence/store.js";
 import { exec } from "../util/exec.js";
 import { localBin, type RunContext, type Runner } from "./base.js";
@@ -23,9 +29,11 @@ const TAIL_LINES = 20;
 
 export const playwrightRunner: Runner = {
   id: "playwright",
-  toCheck(project: Project, _cap: Capability): Check {
+  toCheck(project: Project, cap: Capability): Check {
     return {
       id: "browser",
+      language: cap.language,
+      key: checkKey("browser", cap.language),
       title: "Browser tests",
       runner: "playwright",
       cmd: localBin(project.root, "playwright"),

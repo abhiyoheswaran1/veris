@@ -24,6 +24,7 @@ describe("vitestRunner", () => {
   it("builds a check invoking vitest run with json reporter", () => {
     const check = vitestRunner.toCheck(project, cap);
     expect(check.id).toBe("unit");
+    expect(check.key).toBe("unit:js");
     expect(check.args).toContain("run");
     expect(check.args.join(" ")).toContain("json");
     expect(check.cmd).toContain(join("node_modules", ".bin", "vitest"));
@@ -35,6 +36,8 @@ describe("vitestRunner", () => {
     const result = await vitestRunner.run(
       {
         id: "unit",
+        language: "js",
+        key: "unit:js",
         title: "Unit tests",
         runner: "vitest",
         cmd: process.execPath,
