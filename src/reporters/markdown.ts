@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import type { VerificationRun } from "../core/model.js";
+import { splitKey, type VerificationRun } from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 
 const STATE_LABEL = {
@@ -49,7 +49,7 @@ export function renderMarkdown(
     const dur = r.durationMs ? `${(r.durationMs / 1000).toFixed(1)}s` : "—";
     const log = r.logRef ? cell(relative(root, r.logRef)) : "—";
     lines.push(
-      `| ${r.checkId} | ${r.status} | ${dur} | ${cell(r.summary)} | ${log} |`,
+      `| ${splitKey(r.checkId).id} | ${r.status} | ${dur} | ${cell(r.summary)} | ${log} |`,
     );
   }
   if (run.verdict.skipped.length) {
@@ -64,7 +64,7 @@ export function renderMarkdown(
     lines.push("## Failure output");
     for (const r of failures) {
       lines.push("");
-      lines.push(`### ${r.checkId}`);
+      lines.push(`### ${splitKey(r.checkId).id}`);
       lines.push("");
       lines.push("```");
       lines.push(r.outputTail ?? "");

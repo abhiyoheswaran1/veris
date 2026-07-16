@@ -59,7 +59,7 @@ export const playwrightRunner: Runner = {
       status = r.code === 0 ? "unknown" : "failed";
     }
     const result: CheckResult = {
-      checkId: "browser",
+      checkId: check.key,
       status,
       durationMs: r.durationMs,
       summary:

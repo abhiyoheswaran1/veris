@@ -12,7 +12,12 @@ import {
 import { changedFiles, gitAnchor } from "../git/changes.js";
 import { renderMarkdown } from "../reporters/markdown.js";
 import { VERSION } from "../version.js";
-import type { CapabilityId, Project, VerificationRun } from "./model.js";
+import {
+  type CapabilityId,
+  checkKey,
+  type Project,
+  type VerificationRun,
+} from "./model.js";
 import { runChecks } from "./orchestrator.js";
 
 export const DEFAULT_CHECKS: CapabilityId[] = ["types", "lint", "unit"];
@@ -100,7 +105,7 @@ export async function affectedProject(
   for (const cap of project.capabilities) {
     if (cap.available && cap.id !== "browser" && !affected.has(cap.id)) {
       run.results.push({
-        checkId: cap.id,
+        checkId: checkKey(cap.id, cap.language),
         status: "skipped",
         durationMs: 0,
         summary: "not affected by changes",

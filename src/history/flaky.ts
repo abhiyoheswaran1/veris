@@ -1,13 +1,13 @@
-import type { CapabilityId, CheckStatus } from "../core/model.js";
+import type { CheckStatus } from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 
 export interface FlakyCheck {
-  id: CapabilityId;
+  id: string; // composite key, e.g. "unit:js"
   statuses: CheckStatus[];
 }
 
 export function detectFlaky(records: EvidenceRecord[]): FlakyCheck[] {
-  const byId = new Map<CapabilityId, CheckStatus[]>();
+  const byId = new Map<string, CheckStatus[]>();
   for (const rec of records) {
     for (const c of rec.checks ?? []) {
       const arr = byId.get(c.id) ?? [];

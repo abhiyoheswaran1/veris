@@ -11,6 +11,7 @@ const project = {
   scripts: {},
   capabilities: (["types", "lint", "unit"] as const).map((id) => ({
     id,
+    language: "js",
     available: true,
   })) as Capability[],
 } as Project;
@@ -19,7 +20,7 @@ describe("buildWatchResults", () => {
   it("returns fresh results for affected and cached for the rest", () => {
     const fresh: CheckResult[] = [
       {
-        checkId: "unit",
+        checkId: "unit:js",
         status: "passed",
         durationMs: 1200,
         summary: "unit tests passed",
@@ -27,9 +28,9 @@ describe("buildWatchResults", () => {
     ];
     const cache = new Map<string, CheckResult>([
       [
-        "types",
+        "types:js",
         {
-          checkId: "types",
+          checkId: "types:js",
           status: "passed",
           durationMs: 300,
           summary: "no type errors",
@@ -38,11 +39,11 @@ describe("buildWatchResults", () => {
     ]);
     const out = buildWatchResults(project, ["unit"], fresh, cache);
     const byId = Object.fromEntries(out.map((r) => [r.checkId, r]));
-    expect(byId.unit?.cached).toBeFalsy();
-    expect(byId.types?.cached).toBe(true);
+    expect(byId["unit:js"]?.cached).toBeFalsy();
+    expect(byId["types:js"]?.cached).toBe(true);
     // lint has neither fresh nor cache → shown as skipped "not affected"
-    expect(byId.lint?.status).toBe("skipped");
-    expect(byId.lint?.summary).toContain("not affected");
+    expect(byId["lint:js"]?.status).toBe("skipped");
+    expect(byId["lint:js"]?.summary).toContain("not affected");
   });
 });
 
@@ -52,12 +53,13 @@ describe("watch tick verdict", () => {
       ...project,
       capabilities: (["types", "unit"] as const).map((id) => ({
         id,
+        language: "js",
         available: true,
       })) as Capability[],
     } as Project;
     const fresh: CheckResult[] = [
       {
-        checkId: "unit",
+        checkId: "unit:js",
         status: "passed",
         durationMs: 500,
         summary: "unit tests passed",
@@ -65,9 +67,9 @@ describe("watch tick verdict", () => {
     ];
     const cache = new Map<string, CheckResult>([
       [
-        "types",
+        "types:js",
         {
-          checkId: "types",
+          checkId: "types:js",
           status: "failed",
           durationMs: 300,
           summary: "type error in src/a.ts",

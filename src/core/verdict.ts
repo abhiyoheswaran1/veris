@@ -1,8 +1,8 @@
-import type {
-  Capability,
-  CapabilityId,
-  CheckResult,
-  Verdict,
+import {
+  type Capability,
+  type CheckResult,
+  checkKey,
+  type Verdict,
 } from "./model.js";
 
 export function computeVerdict(
@@ -10,29 +10,29 @@ export function computeVerdict(
   capabilities: Capability[],
 ): Verdict {
   const reasons: string[] = [];
-  const skipped: CapabilityId[] = [];
-  const verifiedCapabilities: CapabilityId[] = [];
+  const skipped: string[] = [];
+  const verifiedCapabilities: string[] = [];
 
   const anyFailed = results.some((r) => r.status === "failed");
 
   for (const cap of capabilities) {
-    const result = results.find((r) => r.checkId === cap.id);
+    const key = checkKey(cap.id, cap.language);
+    const result = results.find((r) => r.checkId === key);
 
     if (!cap.available) {
-      skipped.push(cap.id);
+      skipped.push(key);
       reasons.push(`${cap.id} skipped — ${cap.reason ?? "not configured"}`);
       continue;
     }
     if (result?.status === "passed") {
-      verifiedCapabilities.push(cap.id);
+      verifiedCapabilities.push(key);
       continue;
     }
     if (result?.status === "failed") {
       reasons.push(`${cap.id} failed — ${result.summary}`);
       continue;
     }
-    // available but not passed/failed: skipped, unknown, or never run
-    skipped.push(cap.id);
+    skipped.push(key);
     reasons.push(`${cap.id} skipped — ${result?.summary ?? "did not run"}`);
   }
 

@@ -33,7 +33,7 @@ export interface Check {
 }
 
 export interface CheckResult {
-  checkId: CapabilityId;
+  checkId: string; // composite key, e.g. "unit:js"
   status: CheckStatus;
   durationMs: number;
   summary: string;
@@ -45,8 +45,8 @@ export interface CheckResult {
 
 export interface Verdict {
   state: VerdictState;
-  verifiedCapabilities: CapabilityId[];
-  skipped: CapabilityId[];
+  verifiedCapabilities: string[]; // composite keys
+  skipped: string[]; // composite keys
   reasons: string[];
 }
 
