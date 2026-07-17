@@ -2,9 +2,11 @@ export type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 export type CapabilityId = "types" | "lint" | "unit" | "browser";
 export type CheckStatus = "passed" | "failed" | "skipped" | "unknown";
 export type VerdictState = "verified" | "failed" | "partial";
+export type Language = "js" | "python" | "go"; // "js" covers TypeScript
 
 export interface Capability {
   id: CapabilityId;
+  language: Language;
   available: boolean;
   runner?: string; // e.g. "tsc", "vitest", "eslint", "biome", "playwright"
   reason?: string; // why unavailable/skipped
@@ -22,6 +24,8 @@ export interface Project {
 
 export interface Check {
   id: CapabilityId;
+  language: Language;
+  key: string;
   title: string;
   runner: string;
   cmd: string;
@@ -29,7 +33,7 @@ export interface Check {
 }
 
 export interface CheckResult {
-  checkId: CapabilityId;
+  checkId: string; // composite key, e.g. "unit:js"
   status: CheckStatus;
   durationMs: number;
   summary: string;
@@ -41,8 +45,8 @@ export interface CheckResult {
 
 export interface Verdict {
   state: VerdictState;
-  verifiedCapabilities: CapabilityId[];
-  skipped: CapabilityId[];
+  verifiedCapabilities: string[]; // composite keys
+  skipped: string[]; // composite keys
   reasons: string[];
 }
 
@@ -63,4 +67,14 @@ export interface VerificationRun {
   reportRef?: string;
   env: EnvironmentInfo;
   scope?: { kind: "affected" | "watch"; changedCount: number };
+}
+
+export function checkKey(id: CapabilityId, language: Language): string {
+  return `${id}:${language}`;
+}
+
+export function splitKey(key: string): { id: string; language: string } {
+  const i = key.indexOf(":");
+  if (i === -1) return { id: key, language: "js" };
+  return { id: key.slice(0, i), language: key.slice(i + 1) };
 }

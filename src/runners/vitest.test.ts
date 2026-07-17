@@ -6,7 +6,12 @@ import type { Capability, Project } from "../core/model.js";
 import { vitestRunner } from "./vitest.js";
 
 const project = { root: "/tmp/x", packageManager: "npm" } as Project;
-const cap: Capability = { id: "unit", available: true, runner: "vitest" };
+const cap: Capability = {
+  id: "unit",
+  language: "js",
+  available: true,
+  runner: "vitest",
+};
 
 let runDir: string;
 
@@ -19,6 +24,7 @@ describe("vitestRunner", () => {
   it("builds a check invoking vitest run with json reporter", () => {
     const check = vitestRunner.toCheck(project, cap);
     expect(check.id).toBe("unit");
+    expect(check.key).toBe("unit:js");
     expect(check.args).toContain("run");
     expect(check.args.join(" ")).toContain("json");
     expect(check.cmd).toContain(join("node_modules", ".bin", "vitest"));
@@ -30,6 +36,8 @@ describe("vitestRunner", () => {
     const result = await vitestRunner.run(
       {
         id: "unit",
+        language: "js",
+        key: "unit:js",
         title: "Unit tests",
         runner: "vitest",
         cmd: process.execPath,

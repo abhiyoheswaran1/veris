@@ -49,9 +49,10 @@ export async function detectProject(root: string): Promise<Project> {
 
 function detectTypes(root: string, has: (n: string) => boolean): Capability {
   if (existsSync(join(root, "tsconfig.json")) && has("typescript"))
-    return { id: "types", available: true, runner: "tsc" };
+    return { id: "types", language: "js", available: true, runner: "tsc" };
   return {
     id: "types",
+    language: "js",
     available: false,
     reason: "no tsconfig.json + typescript dependency",
   };
@@ -61,24 +62,41 @@ function detectUnit(
   has: (n: string) => boolean,
   scripts: Record<string, string>,
 ): Capability {
-  if (has("vitest")) return { id: "unit", available: true, runner: "vitest" };
-  if (has("jest")) return { id: "unit", available: true, runner: "jest" };
+  if (has("vitest"))
+    return { id: "unit", language: "js", available: true, runner: "vitest" };
+  if (has("jest"))
+    return { id: "unit", language: "js", available: true, runner: "jest" };
   if (Object.values(scripts).some((s) => s.includes("node --test")))
-    return { id: "unit", available: true, runner: "node-test" };
-  return { id: "unit", available: false, reason: "no test runner detected" };
+    return {
+      id: "unit",
+      language: "js",
+      available: true,
+      runner: "node-test",
+    };
+  return {
+    id: "unit",
+    language: "js",
+    available: false,
+    reason: "no test runner detected",
+  };
 }
 
 function detectLint(root: string, has: (n: string) => boolean): Capability {
   if (existsSync(join(root, "biome.json")) || has("@biomejs/biome"))
-    return { id: "lint", available: true, runner: "biome" };
+    return { id: "lint", language: "js", available: true, runner: "biome" };
   if (
     has("eslint") ||
     [".eslintrc", ".eslintrc.json", ".eslintrc.cjs", "eslint.config.js"].some(
       (f) => existsSync(join(root, f)),
     )
   )
-    return { id: "lint", available: true, runner: "eslint" };
-  return { id: "lint", available: false, reason: "no linter configured" };
+    return { id: "lint", language: "js", available: true, runner: "eslint" };
+  return {
+    id: "lint",
+    language: "js",
+    available: false,
+    reason: "no linter configured",
+  };
 }
 
 function detectBrowser(root: string, has: (n: string) => boolean): Capability {
@@ -87,10 +105,16 @@ function detectBrowser(root: string, has: (n: string) => boolean): Capability {
     existsSync(join(root, "playwright.config.ts")) ||
     existsSync(join(root, "playwright.config.js"))
   ) {
-    return { id: "browser", available: true, runner: "playwright" };
+    return {
+      id: "browser",
+      language: "js",
+      available: true,
+      runner: "playwright",
+    };
   }
   return {
     id: "browser",
+    language: "js",
     available: false,
     reason: "no browser runner configured",
   };

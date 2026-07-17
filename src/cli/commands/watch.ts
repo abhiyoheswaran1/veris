@@ -1,6 +1,11 @@
 import { affectedChecks } from "../../affected/gate.js";
 import { detectProject } from "../../config/detect.js";
-import type { CapabilityId, CheckResult, Project } from "../../core/model.js";
+import {
+  type CapabilityId,
+  type CheckResult,
+  checkKey,
+  type Project,
+} from "../../core/model.js";
 import { runChecks } from "../../core/orchestrator.js";
 import { computeVerdict } from "../../core/verdict.js";
 import { changedFiles } from "../../git/changes.js";
@@ -18,18 +23,19 @@ export function buildWatchResults(
   const out: CheckResult[] = [];
   for (const cap of project.capabilities) {
     if (!cap.available || cap.id === "browser") continue;
-    const f = freshById.get(cap.id);
+    const key = checkKey(cap.id, cap.language);
+    const f = freshById.get(key);
     if (f) {
       out.push({ ...f, cached: false });
       continue;
     }
-    const c = cache.get(cap.id);
+    const c = cache.get(key);
     if (c && !affectedSet.has(cap.id)) {
       out.push({ ...c, cached: true });
       continue;
     }
     out.push({
-      checkId: cap.id,
+      checkId: key,
       status: "skipped",
       durationMs: 0,
       summary: "not affected by changes",

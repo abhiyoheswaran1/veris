@@ -8,6 +8,7 @@ import { parsePlaywrightStats, playwrightRunner } from "./playwright.js";
 const project = { root: "/tmp/x", packageManager: "npm" } as Project;
 const cap: Capability = {
   id: "browser",
+  language: "js",
   available: true,
   runner: "playwright",
 };
@@ -30,6 +31,7 @@ describe("playwrightRunner", () => {
   it("builds a check invoking playwright test with the json reporter", () => {
     const check = playwrightRunner.toCheck(project, cap);
     expect(check.id).toBe("browser");
+    expect(check.key).toBe("browser:js");
     expect(check.args).toEqual(["test", "--reporter=json"]);
     expect(check.cmd).toContain(join("node_modules", ".bin", "playwright"));
   });
@@ -39,6 +41,8 @@ describe("playwrightRunner", () => {
     const result = await playwrightRunner.run(
       {
         id: "browser",
+        language: "js",
+        key: "browser:js",
         title: "Browser tests",
         runner: "playwright",
         cmd: process.execPath,
@@ -58,6 +62,8 @@ describe("playwrightRunner", () => {
     const result = await playwrightRunner.run(
       {
         id: "browser",
+        language: "js",
+        key: "browser:js",
         title: "Browser tests",
         runner: "playwright",
         cmd: process.execPath,

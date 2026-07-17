@@ -32,7 +32,12 @@ describe("runChecks", () => {
       languages: ["javascript"],
       scripts: {},
       capabilities: [
-        { id: "lint", available: true, runner: "unregistered-linter" },
+        {
+          id: "lint",
+          language: "js",
+          available: true,
+          runner: "unregistered-linter",
+        },
       ],
     } as Project;
 
@@ -54,19 +59,29 @@ describe("runChecks", () => {
       languages: ["typescript"],
       scripts: {},
       capabilities: [
-        { id: "types", available: true, runner: "tsc" },
-        { id: "lint", available: true, runner: "unregistered-linter" },
-        { id: "unit", available: false, reason: "no test runner detected" },
+        { id: "types", language: "js", available: true, runner: "tsc" },
+        {
+          id: "lint",
+          language: "js",
+          available: true,
+          runner: "unregistered-linter",
+        },
+        {
+          id: "unit",
+          language: "js",
+          available: false,
+          reason: "no test runner detected",
+        },
       ],
     } as Project;
 
     const run = await runChecks(project, ["lint"], project.root);
 
     expect(run.results).toHaveLength(1);
-    expect(run.results[0]?.checkId).toBe("lint");
+    expect(run.results[0]?.checkId).toBe("lint:js");
 
-    expect(run.verdict.skipped).toContain("lint");
-    expect(run.verdict.skipped).not.toContain("types");
+    expect(run.verdict.skipped).toContain("lint:js");
+    expect(run.verdict.skipped).not.toContain("types:js");
     expect(run.verdict.state).toBe("partial");
   });
 
@@ -78,7 +93,9 @@ describe("runChecks", () => {
       frameworks: [],
       languages: [],
       scripts: {},
-      capabilities: [{ id: "unit", available: false, reason: "none" }],
+      capabilities: [
+        { id: "unit", language: "js", available: false, reason: "none" },
+      ],
     } as unknown as Project;
 
     await expect(runChecks(project, ["types"], project.root)).rejects.toThrow(

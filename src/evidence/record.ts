@@ -1,17 +1,17 @@
 import { createHash } from "node:crypto";
 import { basename } from "node:path";
-import type {
-  CapabilityId,
-  CheckStatus,
-  VerdictState,
-  VerificationRun,
+import {
+  type CheckStatus,
+  checkKey,
+  type VerdictState,
+  type VerificationRun,
 } from "../core/model.js";
 import type { GitAnchor } from "../git/changes.js";
 
 export const EVIDENCE_SCHEMA = "veriskit/evidence@1";
 
 export interface EvidenceCheck {
-  id: CapabilityId;
+  id: string; // composite key, e.g. "unit:js"
   status: CheckStatus;
   runner?: string;
   durationMs: number;
@@ -37,8 +37,8 @@ export interface EvidenceRecord {
   checks: EvidenceCheck[];
   verdict: {
     state: VerdictState;
-    verifiedCapabilities: CapabilityId[];
-    skipped: CapabilityId[];
+    verifiedCapabilities: string[]; // composite keys
+    skipped: string[]; // composite keys
     reasons: string[];
   };
   digest: string;
@@ -83,7 +83,9 @@ export function buildRecord(
   toolVersion: string,
 ): EvidenceRecord {
   const runnerOf = new Map(
-    run.project.capabilities.map((c) => [c.id, c.runner] as const),
+    run.project.capabilities.map(
+      (c) => [checkKey(c.id, c.language), c.runner] as const,
+    ),
   );
 
   const checks: EvidenceCheck[] = run.results.map((r) => {

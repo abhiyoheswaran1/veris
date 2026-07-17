@@ -11,6 +11,7 @@ const project = (avail: Capability["id"][]): Project =>
     scripts: {},
     capabilities: (["types", "lint", "unit", "browser"] as const).map((id) => ({
       id,
+      language: "js" as const,
       available: avail.includes(id),
     })),
   }) as Project;

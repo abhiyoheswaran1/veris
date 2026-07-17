@@ -1,4 +1,5 @@
 import type { VerificationRun } from "../core/model.js";
+import { splitKey } from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 import { renderMarkdown } from "../reporters/markdown.js";
 
@@ -16,7 +17,7 @@ export function renderComment(
 ): string {
   const summary = run.results
     .filter((r) => r.status !== "skipped")
-    .map((r) => `${r.checkId} ${r.status}`)
+    .map((r) => `${splitKey(r.checkId).id} ${r.status}`)
     .join(" · ");
   return [
     MARKER,

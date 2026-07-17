@@ -22,7 +22,9 @@ function run(): VerificationRun {
       frameworks: [],
       languages: [],
       scripts: {},
-      capabilities: [{ id: "unit", available: true, runner: "vitest" }],
+      capabilities: [
+        { id: "unit", language: "js", available: true, runner: "vitest" },
+      ],
     },
     results: [
       { checkId: "unit", status: "passed", durationMs: 1, summary: "ok" },

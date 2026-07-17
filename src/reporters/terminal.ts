@@ -1,6 +1,10 @@
 import pc from "picocolors";
 import { isPlain } from "../cli/tty.js";
-import type { CheckResult, VerificationRun } from "../core/model.js";
+import {
+  type CheckResult,
+  splitKey,
+  type VerificationRun,
+} from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 
 function glyph(status: CheckResult["status"], plain: boolean): string {
@@ -52,7 +56,8 @@ export function renderRun(
         : r.cached
           ? dim(`⟳ cached · ${secs(r.durationMs) || "—"}`)
           : secs(r.durationMs);
-    lines.push(`  ${g} ${r.checkId.padEnd(14)} ${detail}`);
+    const label = splitKey(r.checkId).id;
+    lines.push(`  ${g} ${label.padEnd(14)} ${detail}`);
     if (r.outputTail) {
       for (const tail of r.outputTail.split("\n")) {
         lines.push(dim(`    ${tail}`));

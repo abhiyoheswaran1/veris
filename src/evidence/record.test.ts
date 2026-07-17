@@ -53,13 +53,13 @@ function sampleRun(): VerificationRun {
       languages: ["ts"],
       scripts: {},
       capabilities: [
-        { id: "unit", available: true, runner: "vitest" },
-        { id: "types", available: true, runner: "tsc" },
+        { id: "unit", language: "js", available: true, runner: "vitest" },
+        { id: "types", language: "js", available: true, runner: "tsc" },
       ],
     },
     results: [
       {
-        checkId: "unit",
+        checkId: "unit:js",
         status: "passed",
         durationMs: 1200,
         summary: "5 passed",
@@ -69,7 +69,7 @@ function sampleRun(): VerificationRun {
     ],
     verdict: {
       state: "verified",
-      verifiedCapabilities: ["unit", "types"],
+      verifiedCapabilities: ["unit:js", "types:js"],
       skipped: [],
       reasons: [],
     },
@@ -96,10 +96,10 @@ describe("buildRecord", () => {
     const rec = buildRecord(
       sampleRun(),
       null,
-      { unit: "sha256:deadbeef" },
+      { "unit:js": "sha256:deadbeef" },
       "0.4.0",
     );
-    const unit = rec.checks.find((c) => c.id === "unit");
+    const unit = rec.checks.find((c) => c.id === "unit:js");
     expect(unit?.runner).toBe("vitest");
     expect(unit?.logDigest).toBe("sha256:deadbeef");
     expect(rec.project.name).toBe("demo-pkg");

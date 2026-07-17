@@ -36,9 +36,9 @@ export async function runViaExec(
   const status: CheckResult["status"] =
     r.code === 0 ? "passed" : r.timedOut ? "unknown" : "failed";
   const output = [r.stdout, r.stderr].filter(Boolean).join("\n").trim();
-  const logRef = await writeLog(ctx.runDir, check.id, `${output}\n`);
+  const logRef = await writeLog(ctx.runDir, check.key, `${output}\n`);
   const result: CheckResult = {
-    checkId: check.id,
+    checkId: check.key,
     status,
     durationMs: r.durationMs,
     summary:
