@@ -5,7 +5,14 @@ import { eslintRunner } from "./eslint.js";
 import { jestRunner } from "./jest.js";
 import { nodeTestRunner } from "./node-test.js";
 import { playwrightRunner } from "./playwright.js";
-import { mypyRunner, pyrightRunner, pytestRunner } from "./python.js";
+import {
+  flake8Runner,
+  mypyRunner,
+  pylintRunner,
+  pyrightRunner,
+  pytestRunner,
+  ruffRunner,
+} from "./python.js";
 import { tscRunner } from "./tsc.js";
 import { vitestRunner } from "./vitest.js";
 
@@ -20,6 +27,9 @@ export const runners: Record<string, Runner> = {
   pytest: pytestRunner,
   mypy: mypyRunner,
   pyright: pyrightRunner,
+  ruff: ruffRunner,
+  flake8: flake8Runner,
+  pylint: pylintRunner,
 };
 
 export type { RunContext, Runner } from "./base.js";

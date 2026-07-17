@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { Capability, Project } from "../core/model.js";
 import { runners } from "./index.js";
-import { mypyRunner, pyrightRunner, pytestRunner } from "./python.js";
+import {
+  flake8Runner,
+  mypyRunner,
+  pylintRunner,
+  pyrightRunner,
+  pytestRunner,
+  ruffRunner,
+} from "./python.js";
 
 const project = { root: "/tmp/pyproj" } as Project;
 const cap = (): Capability => ({
@@ -57,5 +64,51 @@ describe("python types runners", () => {
     expect(check.cmd.endsWith("pyright")).toBe(true);
     expect(check.args).toEqual([]);
     expect(runners.pyright).toBe(pyrightRunner);
+  });
+});
+
+describe("python lint runners", () => {
+  const lintCap = (runner: string): Capability => ({
+    id: "lint",
+    language: "python",
+    available: true,
+    runner,
+  });
+
+  it("ruff builds a lint:python check", () => {
+    const check = ruffRunner.toCheck(project, lintCap("ruff"));
+    expect(check.key).toBe("lint:python");
+    expect(check.cmd.endsWith("ruff")).toBe(true);
+    expect(check.args).toEqual(["check", "."]);
+  });
+
+  it("flake8 and pylint build lint:python checks", () => {
+    expect(flake8Runner.toCheck(project, lintCap("flake8")).args).toEqual([
+      ".",
+    ]);
+    expect(pylintRunner.toCheck(project, lintCap("pylint")).args).toEqual([
+      ".",
+    ]);
+  });
+
+  it("all python lint runners are registered", () => {
+    expect(runners.ruff).toBe(ruffRunner);
+    expect(runners.flake8).toBe(flake8Runner);
+    expect(runners.pylint).toBe(pylintRunner);
+  });
+});
+
+describe("python runner integration", () => {
+  it("every python runner name emitted by detection has a registered runner", () => {
+    for (const name of [
+      "pytest",
+      "mypy",
+      "pyright",
+      "ruff",
+      "flake8",
+      "pylint",
+    ]) {
+      expect(runners[name]).toBeDefined();
+    }
   });
 });

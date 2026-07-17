@@ -75,3 +75,36 @@ export const pyrightRunner = makePythonRunner({
   fail: "type errors",
   timeoutMs: 5 * 60_000,
 });
+
+export const ruffRunner = makePythonRunner({
+  runner: "ruff",
+  capId: "lint",
+  tool: "ruff",
+  args: ["check", "."],
+  title: "Lint (ruff)",
+  pass: "no lint errors",
+  fail: "lint errors",
+  timeoutMs: 5 * 60_000,
+});
+
+export const flake8Runner = makePythonRunner({
+  runner: "flake8",
+  capId: "lint",
+  tool: "flake8",
+  args: ["."],
+  title: "Lint (flake8)",
+  pass: "no lint errors",
+  fail: "lint errors",
+  timeoutMs: 5 * 60_000,
+});
+
+export const pylintRunner = makePythonRunner({
+  runner: "pylint",
+  capId: "lint",
+  tool: "pylint",
+  args: ["."],
+  title: "Lint (pylint)",
+  pass: "no lint errors",
+  fail: "lint errors",
+  timeoutMs: 5 * 60_000,
+});
