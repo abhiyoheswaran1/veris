@@ -2,7 +2,12 @@ import type { Capability, Check, CheckResult, Project } from "../core/model.js";
 import type { Runner } from "./base.js";
 import { biomeRunner } from "./biome.js";
 import { eslintRunner } from "./eslint.js";
-import { goBuildRunner, goTestRunner } from "./go.js";
+import {
+  goBuildRunner,
+  golangciLintRunner,
+  goTestRunner,
+  goVetRunner,
+} from "./go.js";
 import { jestRunner } from "./jest.js";
 import { nodeTestRunner } from "./node-test.js";
 import { playwrightRunner } from "./playwright.js";
@@ -33,6 +38,8 @@ export const runners: Record<string, Runner> = {
   pylint: pylintRunner,
   "go-test": goTestRunner,
   "go-build": goBuildRunner,
+  "golangci-lint": golangciLintRunner,
+  "go-vet": goVetRunner,
 };
 
 export type { RunContext, Runner } from "./base.js";

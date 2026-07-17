@@ -64,3 +64,25 @@ export const goBuildRunner = makeGoRunner({
   fail: "compile errors",
   timeoutMs: 5 * 60_000,
 });
+
+export const golangciLintRunner = makeGoRunner({
+  runner: "golangci-lint",
+  capId: "lint",
+  tool: "golangci-lint",
+  args: ["run"],
+  title: "Lint (golangci-lint)",
+  pass: "no lint errors",
+  fail: "lint errors",
+  timeoutMs: 5 * 60_000,
+});
+
+export const goVetRunner = makeGoRunner({
+  runner: "go-vet",
+  capId: "lint",
+  tool: "go",
+  args: ["vet", "./..."],
+  title: "Lint (go vet)",
+  pass: "no vet issues",
+  fail: "vet issues",
+  timeoutMs: 5 * 60_000,
+});
