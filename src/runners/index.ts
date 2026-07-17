@@ -5,7 +5,7 @@ import { eslintRunner } from "./eslint.js";
 import { jestRunner } from "./jest.js";
 import { nodeTestRunner } from "./node-test.js";
 import { playwrightRunner } from "./playwright.js";
-import { pytestRunner } from "./python.js";
+import { mypyRunner, pyrightRunner, pytestRunner } from "./python.js";
 import { tscRunner } from "./tsc.js";
 import { vitestRunner } from "./vitest.js";
 
@@ -18,6 +18,8 @@ export const runners: Record<string, Runner> = {
   biome: biomeRunner,
   playwright: playwrightRunner,
   pytest: pytestRunner,
+  mypy: mypyRunner,
+  pyright: pyrightRunner,
 };
 
 export type { RunContext, Runner } from "./base.js";

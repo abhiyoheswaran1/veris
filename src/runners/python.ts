@@ -53,3 +53,25 @@ export const pytestRunner = makePythonRunner({
   fail: "pytest failed",
   timeoutMs: 10 * 60_000,
 });
+
+export const mypyRunner = makePythonRunner({
+  runner: "mypy",
+  capId: "types",
+  tool: "mypy",
+  args: ["."],
+  title: "Type check (mypy)",
+  pass: "no type errors",
+  fail: "type errors",
+  timeoutMs: 5 * 60_000,
+});
+
+export const pyrightRunner = makePythonRunner({
+  runner: "pyright",
+  capId: "types",
+  tool: "pyright",
+  args: [],
+  title: "Type check (pyright)",
+  pass: "no type errors",
+  fail: "type errors",
+  timeoutMs: 5 * 60_000,
+});
