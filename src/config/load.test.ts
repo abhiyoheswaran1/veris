@@ -22,3 +22,20 @@ describe("loadConfig", () => {
     expect(cfg?.checks).toEqual(["unit"]);
   });
 });
+
+describe("loadConfig — polyglot fields", () => {
+  it("reads languages and tools overrides", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-cfg-"));
+    mkdirSync(join(root, ".veris"), { recursive: true });
+    writeFileSync(
+      join(root, ".veris", "config.json"),
+      JSON.stringify({
+        languages: { python: true, go: false },
+        tools: { python: { lint: "flake8" } },
+      }),
+    );
+    const cfg = await loadConfig(root);
+    expect(cfg?.languages?.go).toBe(false);
+    expect(cfg?.tools?.python?.lint).toBe("flake8");
+  });
+});
