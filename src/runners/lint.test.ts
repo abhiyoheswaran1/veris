@@ -28,7 +28,7 @@ describe("lint runners", () => {
     expect(c.id).toBe("lint");
     expect(c.key).toBe("lint:js");
   });
-  it("registry exposes all seven runners", () => {
+  it("registry exposes all eight runners", () => {
     expect(Object.keys(runners).sort()).toEqual(
       [
         "biome",
@@ -36,6 +36,7 @@ describe("lint runners", () => {
         "jest",
         "node-test",
         "playwright",
+        "pytest",
         "tsc",
         "vitest",
       ].sort(),
