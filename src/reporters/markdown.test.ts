@@ -98,3 +98,48 @@ describe("renderMarkdown", () => {
     expect(md).toContain("not forgery-proof");
   });
 });
+
+describe("renderMarkdown — polyglot", () => {
+  it("qualifies the Check column with the language across languages", () => {
+    const polyRun = {
+      id: "p",
+      startedAt: "2026-07-17T00:00:00.000Z",
+      project: {
+        root: "/x",
+        packageManager: "npm",
+        frameworks: [],
+        languages: ["javascript", "go"],
+        scripts: {},
+        capabilities: [],
+      },
+      results: [
+        { checkId: "unit:js", status: "passed", durationMs: 100, summary: "" },
+        {
+          checkId: "unit:go",
+          status: "failed",
+          durationMs: 100,
+          summary: "",
+          outputTail: "FAIL x_test.go",
+        },
+      ],
+      verdict: {
+        state: "failed",
+        verifiedCapabilities: ["unit:js"],
+        skipped: [],
+        reasons: [],
+      },
+      env: {
+        os: "linux",
+        node: "v24",
+        pm: "npm",
+        ci: false,
+        timestamp: "2026-07-17T00:00:00.000Z",
+      },
+    } as unknown as import("../core/model.js").VerificationRun;
+    const out = renderMarkdown(polyRun);
+    expect(out).toContain("unit (js)");
+    expect(out).toContain("unit (go)");
+    // failure heading also qualified
+    expect(out).toContain("### unit (go)");
+  });
+});

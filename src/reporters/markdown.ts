@@ -1,6 +1,7 @@
 import { relative } from "node:path";
-import { splitKey, type VerificationRun } from "../core/model.js";
+import type { VerificationRun } from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
+import { checkLabel, runSpansLanguages } from "./label.js";
 
 const STATE_LABEL = {
   verified: "Verified",
@@ -18,6 +19,7 @@ export function renderMarkdown(
 ): string {
   const root = run.project.root;
   const lines: string[] = [];
+  const showLang = runSpansLanguages(run.results);
   lines.push("# VerisKit Verification Report");
   if (run.scope?.kind) {
     lines.push("");
@@ -49,7 +51,7 @@ export function renderMarkdown(
     const dur = r.durationMs ? `${(r.durationMs / 1000).toFixed(1)}s` : "—";
     const log = r.logRef ? cell(relative(root, r.logRef)) : "—";
     lines.push(
-      `| ${splitKey(r.checkId).id} | ${r.status} | ${dur} | ${cell(r.summary)} | ${log} |`,
+      `| ${checkLabel(r.checkId, showLang)} | ${r.status} | ${dur} | ${cell(r.summary)} | ${log} |`,
     );
   }
   if (run.verdict.skipped.length) {
@@ -64,7 +66,7 @@ export function renderMarkdown(
     lines.push("## Failure output");
     for (const r of failures) {
       lines.push("");
-      lines.push(`### ${splitKey(r.checkId).id}`);
+      lines.push(`### ${checkLabel(r.checkId, showLang)}`);
       lines.push("");
       lines.push("```");
       lines.push(r.outputTail ?? "");
