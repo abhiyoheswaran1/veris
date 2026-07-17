@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — 2026-07-17
+
+### Changed
+- Evidence check ids are now namespaced by language (for example `unit:js` instead of `unit`), and per-check log files are renamed to match (`unit-js.log`). This is the groundwork for polyglot verification — running each language's own test tools under one verdict. Terminal output and exit codes are unchanged.
+
 ## 0.6.0 — 2026-07-14
 
 ### Added
