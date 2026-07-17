@@ -46,3 +46,34 @@ describe("detectBrowser", () => {
     expect(browser?.available).toBe(false);
   });
 });
+
+describe("detectProject — polyglot", () => {
+  it("adds go capabilities and language when go.mod is present", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-poly-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    writeFileSync(join(root, "go.mod"), "module x\n\ngo 1.22\n");
+    const project = await detectProject(root);
+    expect(project.languages).toContain("go");
+    expect(
+      project.capabilities.some((c) => c.language === "go" && c.id === "unit"),
+    ).toBe(true);
+  });
+
+  it("omits a disabled language entirely", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-poly2-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    writeFileSync(join(root, "go.mod"), "module x\n\ngo 1.22\n");
+    const project = await detectProject(root, { languages: { go: false } });
+    expect(project.languages).not.toContain("go");
+    expect(project.capabilities.some((c) => c.language === "go")).toBe(false);
+  });
+
+  it("leaves a pure-js repo's capabilities unchanged (js only)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-js-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    const project = await detectProject(root);
+    expect(project.capabilities.every((c) => c.language === "js")).toBe(true);
+    expect(project.languages).not.toContain("python");
+    expect(project.languages).not.toContain("go");
+  });
+});

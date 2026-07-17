@@ -2,6 +2,9 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Capability, PackageManager, Project } from "../core/model.js";
 import { readJsonIfExists } from "../util/fs-safe.js";
+import { detectGo } from "./detect-go.js";
+import { detectPython } from "./detect-python.js";
+import { loadConfig, type VerisConfig } from "./load.js";
 
 interface PkgJson {
   name?: string;
@@ -17,23 +20,36 @@ function detectPackageManager(root: string): PackageManager {
   return "npm";
 }
 
-export async function detectProject(root: string): Promise<Project> {
+export async function detectProject(
+  root: string,
+  config?: VerisConfig | null,
+): Promise<Project> {
+  const cfg = config ?? (await loadConfig(root));
   const pkg =
     (await readJsonIfExists<PkgJson>(join(root, "package.json"))) ?? {};
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
   const has = (name: string) => name in deps;
   const scripts = pkg.scripts ?? {};
 
-  const languages = existsSync(join(root, "tsconfig.json"))
+  const jsLanguages = existsSync(join(root, "tsconfig.json"))
     ? ["typescript", "javascript"]
     : ["javascript"];
   const frameworks = ["next", "vite", "react"].filter(has);
 
-  const capabilities: Capability[] = [
+  const jsCapabilities: Capability[] = [
     detectTypes(root, has),
     detectUnit(has, scripts),
     detectLint(root, has),
     detectBrowser(root, has),
+  ];
+
+  const pythonCapabilities = detectPython(root, cfg);
+  const goCapabilities = detectGo(root, cfg);
+
+  const languages = [
+    ...jsLanguages,
+    ...(pythonCapabilities.length ? ["python"] : []),
+    ...(goCapabilities.length ? ["go"] : []),
   ];
 
   return {
@@ -43,7 +59,7 @@ export async function detectProject(root: string): Promise<Project> {
     frameworks,
     languages,
     scripts,
-    capabilities,
+    capabilities: [...jsCapabilities, ...pythonCapabilities, ...goCapabilities],
   };
 }
 
