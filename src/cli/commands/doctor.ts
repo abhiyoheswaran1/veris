@@ -19,11 +19,12 @@ export function renderDoctor(project: Project, env: EnvironmentInfo): string {
   lines.push("");
   lines.push("Capabilities");
   for (const c of project.capabilities) {
+    const label = `${c.id} (${c.language})`;
     if (c.available) {
-      lines.push(`  ${ok("✓")} ${c.id.padEnd(8)} ${dim(`via ${c.runner}`)}`);
+      lines.push(`  ${ok("✓")} ${label.padEnd(16)} ${dim(`via ${c.runner}`)}`);
     } else {
       lines.push(
-        `  ${dim("⊘")} ${c.id.padEnd(8)} ${dim(`skipped — ${c.reason}`)}`,
+        `  ${dim("⊘")} ${label.padEnd(16)} ${dim(`skipped — ${c.reason}`)}`,
       );
     }
   }
