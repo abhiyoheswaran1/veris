@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { runners } from "../runners/index.js";
 import { detectProject } from "./detect.js";
 
 const fx = (name: string) =>
@@ -44,5 +45,59 @@ describe("detectBrowser", () => {
     const project = await detectProject(dir);
     const browser = project.capabilities.find((c) => c.id === "browser");
     expect(browser?.available).toBe(false);
+  });
+});
+
+describe("detectProject — polyglot", () => {
+  it("adds go capabilities and language when go.mod is present", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-poly-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    writeFileSync(join(root, "go.mod"), "module x\n\ngo 1.22\n");
+    const project = await detectProject(root);
+    expect(project.languages).toContain("go");
+    expect(
+      project.capabilities.some((c) => c.language === "go" && c.id === "unit"),
+    ).toBe(true);
+  });
+
+  it("omits a disabled language entirely", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-poly2-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    writeFileSync(join(root, "go.mod"), "module x\n\ngo 1.22\n");
+    const project = await detectProject(root, { languages: { go: false } });
+    expect(project.languages).not.toContain("go");
+    expect(project.capabilities.some((c) => c.language === "go")).toBe(false);
+  });
+
+  it("leaves a pure-js repo's capabilities unchanged (js only)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-js-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    const project = await detectProject(root);
+    expect(project.capabilities.every((c) => c.language === "js")).toBe(true);
+    expect(project.languages).not.toContain("python");
+    expect(project.languages).not.toContain("go");
+  });
+});
+
+describe("detectProject — polyglot fixture end to end", () => {
+  it("detects all three languages and every emitted runner name is registered", async () => {
+    const project = await detectProject(fx("polyglot"));
+
+    // all three languages present
+    for (const lang of ["javascript", "python", "go"]) {
+      expect(project.languages).toContain(lang);
+    }
+    // capabilities exist for python and go (availability depends on the host,
+    // so we assert presence, not availability)
+    expect(project.capabilities.some((c) => c.language === "python")).toBe(
+      true,
+    );
+    expect(project.capabilities.some((c) => c.language === "go")).toBe(true);
+
+    // detection ↔ registry handshake: every runner name a capability names is
+    // a registered runner (no "no runner registered" surprises).
+    for (const c of project.capabilities) {
+      if (c.runner) expect(runners[c.runner]).toBeDefined();
+    }
   });
 });

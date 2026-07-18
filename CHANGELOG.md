@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Polyglot verification. `veris` now detects Python (`pyproject.toml`/`setup.py`/`setup.cfg`/`requirements.txt`) and Go (`go.mod`) alongside JavaScript/TypeScript, runs each language's own tools — pytest, mypy/pyright, ruff/flake8/pylint for Python; `go test`, `go build`, golangci-lint/`go vet` for Go — and merges everything into one verdict and one evidence record. Tool choice is presence-first with a preference order, overridable in `.veris/config.json` (`languages` to enable/disable a language, `tools` to force a specific tool per capability). `doctor` shows the language of each capability, and the verification report qualifies each check with its language when a run spans more than one. JavaScript-only projects are unaffected.
+
 ## 0.6.1 — 2026-07-17
 
 ### Changed

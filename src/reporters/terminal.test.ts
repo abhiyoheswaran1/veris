@@ -144,3 +144,45 @@ describe("renderRun — affected scope", () => {
     expect(out).not.toContain("✓ Verified"); // scoped wording, not bare Verified
   });
 });
+
+describe("renderRun — polyglot", () => {
+  it("qualifies rows with the language when the run spans languages", () => {
+    const polyRun = {
+      id: "p",
+      startedAt: "2026-07-17T00:00:00.000Z",
+      project: {
+        root: "/x",
+        packageManager: "npm",
+        frameworks: [],
+        languages: ["javascript", "python"],
+        scripts: {},
+        capabilities: [],
+      },
+      results: [
+        { checkId: "unit:js", status: "passed", durationMs: 100, summary: "" },
+        {
+          checkId: "unit:python",
+          status: "passed",
+          durationMs: 100,
+          summary: "",
+        },
+      ],
+      verdict: {
+        state: "verified",
+        verifiedCapabilities: ["unit:js", "unit:python"],
+        skipped: [],
+        reasons: [],
+      },
+      env: {
+        os: "linux",
+        node: "v24",
+        pm: "npm",
+        ci: false,
+        timestamp: "2026-07-17T00:00:00.000Z",
+      },
+    } as unknown as import("../core/model.js").VerificationRun;
+    const out = renderRun(polyRun);
+    expect(out).toContain("unit (js)");
+    expect(out).toContain("unit (python)");
+  });
+});

@@ -1,11 +1,8 @@
 import pc from "picocolors";
 import { isPlain } from "../cli/tty.js";
-import {
-  type CheckResult,
-  splitKey,
-  type VerificationRun,
-} from "../core/model.js";
+import type { CheckResult, VerificationRun } from "../core/model.js";
 import type { EvidenceRecord } from "../evidence/record.js";
+import { checkLabel, runSpansLanguages } from "./label.js";
 
 function glyph(status: CheckResult["status"], plain: boolean): string {
   const map: Record<CheckResult["status"], string> = {
@@ -48,6 +45,7 @@ export function renderRun(
   }
   lines.push("");
   lines.push("Checks");
+  const showLang = runSpansLanguages(run.results);
   for (const r of run.results) {
     const g = glyph(r.status, plain); // always reflect the real status — cached failures stay ✗
     const detail =
@@ -56,8 +54,8 @@ export function renderRun(
         : r.cached
           ? dim(`⟳ cached · ${secs(r.durationMs) || "—"}`)
           : secs(r.durationMs);
-    const label = splitKey(r.checkId).id;
-    lines.push(`  ${g} ${label.padEnd(14)} ${detail}`);
+    const label = checkLabel(r.checkId, showLang);
+    lines.push(`  ${g} ${label.padEnd(showLang ? 16 : 14)} ${detail}`);
     if (r.outputTail) {
       for (const tail of r.outputTail.split("\n")) {
         lines.push(dim(`    ${tail}`));
