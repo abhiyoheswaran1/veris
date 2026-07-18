@@ -111,3 +111,36 @@ describe("computeVerdict", () => {
     expect(v.skipped).toContain("lint:js");
   });
 });
+
+describe("computeVerdict — polyglot reasons", () => {
+  it("qualifies reasons with the language when the run spans languages", () => {
+    const caps: Capability[] = [
+      { id: "unit", language: "js", available: true, runner: "vitest" },
+      {
+        id: "unit",
+        language: "python",
+        available: false,
+        reason: "Python detected; pytest not installed",
+      },
+    ];
+    const v = computeVerdict([res("unit:js", "passed")], caps);
+    expect(v.state).toBe("partial");
+    expect(v.reasons.some((r) => r.startsWith("unit (python) skipped"))).toBe(
+      true,
+    );
+  });
+
+  it("does not qualify reasons for a single-language run", () => {
+    const caps: Capability[] = [
+      {
+        id: "lint",
+        language: "js",
+        available: false,
+        reason: "no linter configured",
+      },
+    ];
+    const v = computeVerdict([], caps);
+    expect(v.reasons.some((r) => r.startsWith("lint skipped"))).toBe(true);
+    expect(v.reasons.some((r) => r.includes("(js)"))).toBe(false);
+  });
+});
