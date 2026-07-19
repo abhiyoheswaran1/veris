@@ -155,9 +155,9 @@ Semantics:
 
 `evaluatePolicy(att, policy, { commit, dirty }) → { passed, checks: Array<{ label, ok, reason }> }`, evaluated and reported in this order:
 
-1. **Integrity** — recompute `attestationDigest(att.statement)`; if `att.signature` present, it must match `att.signature.digest`. Recompute `computeDigest(predicate)` and confirm it equals `predicate.digest` (the evidence wasn't tampered).
+1. **Integrity** — recompute `computeDigest(predicate)` == `predicate.digest` (evidence untampered); if `att.signature` present, `att.signature.digest` must equal `attestationDigest(att.statement)`; AND the subject commit (`subject[0].digest.gitCommit`) must equal the **digest-protected** `predicate.git.commit` (binds the unprotected subject to the protected evidence, so a lone subject edit fails here).
 2. **Signature/signer** — per §6 `signers` + CLI `--pubkey`/`--key-id`.
-3. **Freshness** — subject commit == `commit`, and `dirty === false` (per §6 `freshness`).
+3. **Freshness** — the **digest-protected** `predicate.git.commit` == current `commit`, and `dirty === false` (per §6 `freshness`). Freshness reads the protected evidence commit, NOT `subject` — the subject is unprotected on an unsigned attestation, so anchoring freshness there would let a single field edit forge a match. Integrity's subject-binding (check 1) is defense-in-depth for the same attack.
 4. **Verdict** — per §6 `verdict`.
 5. **Required capabilities × languages** — per §6.
 
