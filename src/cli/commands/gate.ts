@@ -7,6 +7,7 @@ import { changedFiles, type GitAnchor, gitAnchor } from "../../git/changes.js";
 import {
   evaluatePolicy,
   loadPolicy,
+  loadPolicyFile,
   type Policy,
 } from "../../policy/policy.js";
 import { readJsonIfExists } from "../../util/fs-safe.js";
@@ -44,9 +45,17 @@ export async function runGate(
     keyId?: string;
   } = {},
 ): Promise<number> {
-  const policy: Policy = opts.policy
-    ? ((await readJsonIfExists<Policy>(opts.policy)) ?? {})
-    : await loadPolicy(root);
+  let policy: Policy;
+  try {
+    policy = opts.policy
+      ? await loadPolicyFile(opts.policy)
+      : await loadPolicy(root);
+  } catch (err) {
+    process.stderr.write(
+      `veris: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 1;
+  }
 
   let att: Attestation;
   if (opts.attestation) {
@@ -82,7 +91,13 @@ export async function runGate(
   }
 
   const git = await currentAnchor(root);
-  const result = evaluatePolicy(att, policy, git, { pubKeyId });
+  let result: ReturnType<typeof evaluatePolicy>;
+  try {
+    result = evaluatePolicy(att, policy, git, { pubKeyId });
+  } catch {
+    process.stderr.write("veris: malformed attestation\n");
+    return 1;
+  }
 
   const plain = isPlain();
   const mark = (ok: boolean) =>

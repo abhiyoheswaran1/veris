@@ -142,4 +142,51 @@ describe("runGate", () => {
 
     expect(await runGate(root)).toBe(1);
   }, 30000);
+
+  it("fails closed (does not silently fall back to a permissive default) when .veris/policy.json exists but is malformed", async () => {
+    const { root } = repo();
+    const { computeDigest } = await import("../../evidence/record.js");
+    const runDir = join(root, ".veris", "runs", "r1");
+    mkdirSync(runDir, { recursive: true });
+    const commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root })
+      .toString()
+      .trim();
+    const base = {
+      schema: "veriskit/evidence@1",
+      id: "r1",
+      startedAt: "t",
+      tool: { name: "veriskit", version: "0.6.1" },
+      git: { commit, branch: "main", dirty: false, changedFiles: 0 },
+      env: { os: "linux", node: "v24", pm: "npm", ci: false, timestamp: "t" },
+      project: {
+        name: "demo",
+        packageManager: "npm",
+        frameworks: [],
+        languages: ["js"],
+      },
+      scope: { kind: "full", changedCount: 0 },
+      checks: [],
+      verdict: {
+        state: "verified",
+        verifiedCapabilities: ["unit:js"],
+        skipped: [],
+        reasons: [],
+      },
+    };
+    writeFileSync(
+      join(runDir, "evidence.json"),
+      JSON.stringify({ ...base, digest: computeDigest(base) }),
+    );
+
+    expect(await runAttest(root)).toBe(0);
+
+    // Write a corrupt / merge-conflicted policy.json AFTER attest, so gate
+    // is the thing reading it fresh off disk. Before the fix, a policy that
+    // fails to parse silently fell back to DEFAULT_POLICY and this run would
+    // have passed; it must now fail closed instead.
+    mkdirSync(join(root, ".veris"), { recursive: true });
+    writeFileSync(join(root, ".veris", "policy.json"), "{{{bad json");
+
+    expect(await runGate(root)).toBe(1);
+  }, 30000);
 });

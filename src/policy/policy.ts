@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   type Attestation,
@@ -6,7 +8,6 @@ import {
 } from "../evidence/attestation.js";
 import { computeDigest } from "../evidence/record.js";
 import { signatureKeyId } from "../evidence/signing.js";
-import { readJsonIfExists } from "../util/fs-safe.js";
 
 export interface Policy {
   require?: {
@@ -23,11 +24,32 @@ export const DEFAULT_POLICY: Policy = {
   freshness: "head",
 };
 
+// Loads .veris/policy.json. Absent is a normal, permissive state (the
+// starter default). Present-but-unparseable is NOT: a corrupt or
+// merge-conflicted policy file must never silently downgrade enforcement, so
+// it throws instead of falling back to DEFAULT_POLICY.
 export async function loadPolicy(root: string): Promise<Policy> {
-  return (
-    (await readJsonIfExists<Policy>(join(root, ".veris", "policy.json"))) ??
-    DEFAULT_POLICY
-  );
+  const path = join(root, ".veris", "policy.json");
+  if (!existsSync(path)) return DEFAULT_POLICY;
+  try {
+    return JSON.parse(await readFile(path, "utf8")) as Policy;
+  } catch {
+    throw new Error(`malformed policy at ${path}`);
+  }
+}
+
+// Loads a policy from an explicit path (e.g. `gate --policy <path>`). Unlike
+// loadPolicy, a missing file here is also an error — there is no notion of
+// "absent means default" when the caller named a specific file.
+export async function loadPolicyFile(path: string): Promise<Policy> {
+  if (!existsSync(path)) {
+    throw new Error(`cannot read policy at ${path}`);
+  }
+  try {
+    return JSON.parse(await readFile(path, "utf8")) as Policy;
+  } catch {
+    throw new Error(`malformed policy at ${path}`);
+  }
 }
 
 export interface GateCheck {
@@ -76,7 +98,15 @@ export function evaluatePolicy(
   });
 
   // 2. Signature / signer — only when required.
-  const sigRequired = (req.signers?.length ?? 0) > 0 || Boolean(trust.pubKeyId);
+  // Normalize signers so a lone string (e.g. from hand-edited JSON) becomes
+  // an exact-match single-element list rather than being iterated char by
+  // char or otherwise mistreated as an array-like.
+  const signers: string[] = Array.isArray(req.signers)
+    ? req.signers
+    : req.signers != null
+      ? [String(req.signers)]
+      : [];
+  const sigRequired = signers.length > 0 || Boolean(trust.pubKeyId);
   if (sigRequired) {
     if (!verifyAttestationSignature(att) || !att.signature) {
       checks.push({
@@ -88,9 +118,7 @@ export function evaluatePolicy(
     } else {
       const kid = signatureKeyId(att.signature);
       const signersOk =
-        !req.signers?.length ||
-        req.signers.includes("*") ||
-        req.signers.includes(kid);
+        signers.length === 0 || signers.includes("*") || signers.includes(kid);
       const trustOk = !trust.pubKeyId || trust.pubKeyId === kid;
       const ok = signersOk && trustOk;
       checks.push({

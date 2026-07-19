@@ -1,9 +1,18 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildAttestation, signAttestation } from "../evidence/attestation.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 import { computeDigest } from "../evidence/record.js";
 import { generateKeyPair, signatureKeyId } from "../evidence/signing.js";
-import { DEFAULT_POLICY, evaluatePolicy, type Policy } from "./policy.js";
+import {
+  DEFAULT_POLICY,
+  evaluatePolicy,
+  loadPolicy,
+  loadPolicyFile,
+  type Policy,
+} from "./policy.js";
 
 const COMMIT = "a".repeat(40);
 
@@ -155,5 +164,65 @@ describe("evaluatePolicy", () => {
       git,
     );
     expect(r.passed).toBe(true);
+  });
+
+  it("treats a lone string signer as an exact-match single-element list, not a substring match", () => {
+    const kp = generateKeyPair();
+    const att = signAttestation(buildAttestation(record()), kp.privateKeyPem);
+    if (!att.signature) throw new Error("expected a signature");
+    const kid = signatureKeyId(att.signature);
+
+    // Hand-edited policy where `signers` is a bare string, not an array.
+    const policy = {
+      require: { signers: kid as unknown as string[] },
+      freshness: "off",
+    } satisfies Policy;
+    expect(evaluatePolicy(att, policy, git).passed).toBe(true);
+
+    // A different id must NOT pass just because it shares characters with kid.
+    const otherPolicy = {
+      require: { signers: `x${kid}` as unknown as string[] },
+      freshness: "off",
+    } satisfies Policy;
+    expect(evaluatePolicy(att, otherPolicy, git).passed).toBe(false);
+  });
+});
+
+describe("loadPolicy / loadPolicyFile", () => {
+  function tmpRoot(): string {
+    return mkdtempSync(join(tmpdir(), "veris-policy-"));
+  }
+
+  it("returns DEFAULT_POLICY when .veris/policy.json is absent", async () => {
+    const root = tmpRoot();
+    await expect(loadPolicy(root)).resolves.toEqual(DEFAULT_POLICY);
+  });
+
+  it("rejects (fails closed) when .veris/policy.json exists but does not parse", async () => {
+    const root = tmpRoot();
+    mkdirSync(join(root, ".veris"), { recursive: true });
+    writeFileSync(join(root, ".veris", "policy.json"), "{{{bad json");
+    await expect(loadPolicy(root)).rejects.toThrow(/malformed/);
+  });
+
+  it("loadPolicyFile rejects when the named file is missing", async () => {
+    const root = tmpRoot();
+    await expect(loadPolicyFile(join(root, "nope.json"))).rejects.toThrow(
+      /cannot read policy/,
+    );
+  });
+
+  it("loadPolicyFile rejects when the named file does not parse", async () => {
+    const root = tmpRoot();
+    const path = join(root, "policy.json");
+    writeFileSync(path, "not json");
+    await expect(loadPolicyFile(path)).rejects.toThrow(/malformed/);
+  });
+
+  it("loadPolicyFile returns the parsed policy when valid", async () => {
+    const root = tmpRoot();
+    const path = join(root, "policy.json");
+    writeFileSync(path, JSON.stringify(DEFAULT_POLICY));
+    await expect(loadPolicyFile(path)).resolves.toEqual(DEFAULT_POLICY);
   });
 });
