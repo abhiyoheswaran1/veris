@@ -200,6 +200,32 @@ export function buildCli() {
     });
 
   cli
+    .command(
+      "gate",
+      "Block unless a valid attestation meets .veris/policy.json",
+    )
+    .option("--policy <path>", "policy file (default .veris/policy.json)")
+    .option("--attestation <path>", "attestation file (default: latest)")
+    .option("--pubkey <path>", "require this public key's signer")
+    .option("--key-id <id>", "require this key id")
+    .action(
+      async (opts: {
+        policy?: string;
+        attestation?: string;
+        pubkey?: string;
+        keyId?: string;
+      }) => {
+        const { runGate } = await import("./commands/gate.js");
+        process.exitCode = await runGate(process.cwd(), {
+          policy: opts.policy,
+          attestation: opts.attestation,
+          pubkey: opts.pubkey,
+          keyId: opts.keyId,
+        });
+      },
+    );
+
+  cli
     .command("log", "List past verification runs (local history)")
     .option("--limit <n>", "How many runs to show (default 20)")
     .option("--flaky", "Show only checks that flip-flop across runs")
