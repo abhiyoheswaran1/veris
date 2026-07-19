@@ -60,14 +60,19 @@ export function evaluatePolicy(
   const predOk = computeDigest(predicate) === att.statement.predicate.digest;
   const sigDigestOk =
     !att.signature || att.signature.digest === attestationDigest(att.statement);
+  const subjectOk =
+    att.statement.subject[0]?.digest.gitCommit ===
+    att.statement.predicate.git?.commit;
   checks.push({
     label: "integrity",
-    ok: predOk && sigDigestOk,
+    ok: predOk && sigDigestOk && subjectOk,
     reason: !predOk
       ? "predicate digest mismatch (tampered)"
-      : sigDigestOk
-        ? "record + statement digests intact"
-        : "signature is over a different statement",
+      : !sigDigestOk
+        ? "signature is over a different statement"
+        : !subjectOk
+          ? "subject does not match evidence commit"
+          : "record + statement digests intact",
   });
 
   // 2. Signature / signer — only when required.
@@ -96,9 +101,9 @@ export function evaluatePolicy(
     }
   }
 
-  // 3. Freshness — subject commit == HEAD and clean tree.
+  // 3. Freshness — digest-protected predicate commit == HEAD and clean tree.
   if ((policy.freshness ?? "head") === "head") {
-    const subject = att.statement.subject[0]?.digest.gitCommit;
+    const attestedCommit = att.statement.predicate.git?.commit;
     if (!git) {
       checks.push({
         label: "freshness",
@@ -106,13 +111,13 @@ export function evaluatePolicy(
         reason: "not in a git repository",
       });
     } else {
-      const commitOk = subject === git.commit;
+      const commitOk = attestedCommit === git.commit;
       const ok = commitOk && !git.dirty;
       checks.push({
         label: "freshness",
         ok,
         reason: !commitOk
-          ? `attested ${subject?.slice(0, 7)}, HEAD is ${git.commit.slice(0, 7)}`
+          ? `attested ${attestedCommit?.slice(0, 7)}, HEAD is ${git.commit.slice(0, 7)}`
           : git.dirty
             ? "working tree is dirty"
             : "matches current HEAD, tree clean",
@@ -144,7 +149,10 @@ export function evaluatePolicy(
     const missing: string[] = [];
     for (const cap of caps) {
       if (langs.length === 0) {
-        if (!verified.has(cap)) missing.push(cap);
+        const ok =
+          verified.has(cap) ||
+          [...verified].some((k) => k.split(":")[0] === cap);
+        if (!ok) missing.push(cap);
       } else {
         for (const lang of langs) {
           const key = `${cap}:${lang}`;

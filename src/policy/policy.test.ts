@@ -59,11 +59,7 @@ describe("evaluatePolicy", () => {
   it("fails on a tampered predicate (integrity)", () => {
     const att = buildAttestation(record());
     att.statement.predicate.verdict.state = "failed"; // digest no longer matches
-    const r = evaluatePolicy(
-      att,
-      att.statement.predicate.git ? DEFAULT_POLICY : DEFAULT_POLICY,
-      git,
-    );
+    const r = evaluatePolicy(att, DEFAULT_POLICY, git);
     expect(r.passed).toBe(false);
     expect(r.checks.find((c) => c.label === "integrity")?.ok).toBe(false);
   });
@@ -137,5 +133,27 @@ describe("evaluatePolicy", () => {
       git,
     );
     expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
+  });
+
+  it("rejects a forged subject that no longer matches the digest-protected evidence commit", () => {
+    // Unsigned attestation whose real (digest-protected) evidence is for a
+    // stale commit. An attacker edits ONLY the subject (which lives outside
+    // the predicate digest) to point at current HEAD.
+    const att = buildAttestation(record({}, "b".repeat(40)));
+    const subject = att.statement.subject[0];
+    if (subject) subject.digest.gitCommit = COMMIT;
+    const r = evaluatePolicy(att, DEFAULT_POLICY, git);
+    expect(r.passed).toBe(false);
+    expect(r.checks.find((c) => c.label === "integrity")?.ok).toBe(false);
+  });
+
+  it("matches a capability-only requirement against composite verifiedCapabilities keys", () => {
+    const att = buildAttestation(record());
+    const r = evaluatePolicy(
+      att,
+      { require: { capabilities: ["unit"] }, freshness: "off" },
+      git,
+    );
+    expect(r.passed).toBe(true);
   });
 });
