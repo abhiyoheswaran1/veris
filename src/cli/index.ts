@@ -182,6 +182,24 @@ export function buildCli() {
     });
 
   cli
+    .command(
+      "attest",
+      "Package + sign the latest verification as a portable attestation",
+    )
+    .option(
+      "--key <path>",
+      "Ed25519 private key PEM (else VERISKIT_SIGNING_KEY)",
+    )
+    .option("--out <path>", "write the attestation to this path")
+    .action(async (opts: { key?: string; out?: string }) => {
+      const { runAttest } = await import("./commands/attest.js");
+      process.exitCode = await runAttest(process.cwd(), {
+        key: opts.key,
+        out: opts.out,
+      });
+    });
+
+  cli
     .command("log", "List past verification runs (local history)")
     .option("--limit <n>", "How many runs to show (default 20)")
     .option("--flaky", "Show only checks that flip-flop across runs")
