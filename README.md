@@ -227,6 +227,47 @@ writes it into `.veris/keys/`, which `veris init` gitignores.
 Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` keeps `runs/`,
 `reports/`, `cache/`, `graph.json`, and `evidence/` out of your history.
 
+## Provable verification
+
+`veris attest` turns the latest `veris verify` run into a signed, portable
+attestation of the exact commit — an in-toto statement wrapping the evidence
+record, written to `.veris/attestations/<run-id>.att.json`:
+
+```bash
+veris attest                          # unsigned, or signed if VERISKIT_SIGNING_KEY is set
+veris attest --key .veris/keys/veriskit-signing.key
+```
+
+It refuses to run on a dirty tree or with no prior `veris verify`, so an
+attestation always names a real, reviewable commit. Sign it with
+`VERISKIT_SIGNING_KEY` (CI) or `--key <path>` (local); unsigned attestations
+are written too but a policy can require a signer.
+
+`veris gate` checks that a valid attestation proves the current commit meets
+`.veris/policy.json` — integrity, trusted signer, freshness against HEAD,
+verdict, and required capabilities×languages — and exits 0 or 1, so it drops
+straight into a CI job:
+
+```bash
+veris gate
+```
+
+`veris init` writes a starter `.veris/policy.json`:
+
+```json
+{
+  "require": { "verdict": "verified" },
+  "freshness": "head"
+}
+```
+
+Commit both `.veris/policy.json` and `.veris/attestations/` — the policy is
+the contract, and attestations are the shareable proof that a commit met it.
+`veris init` gitignores VerisKit's other tool output (`runs/`, `reports/`,
+`cache/`, `evidence/`, `keys/`) so an untracked run never makes `gate`'s
+freshness check see a false "dirty" tree. Signing today is Ed25519 with a key
+you hold; keyless signing via Sigstore is planned.
+
 ## What VerisKit does not do yet
 
 VerisKit says what it cannot do as plainly as what it can:

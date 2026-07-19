@@ -20,3 +20,13 @@ describe("runInit", () => {
     expect(await runInit(dir)).toBe(0);
   });
 });
+
+describe("runInit — policy", () => {
+  it("writes a starter .veris/policy.json", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-init-pol-"));
+    await runInit(root);
+    const p = join(root, ".veris", "policy.json");
+    expect(existsSync(p)).toBe(true);
+    expect(JSON.parse(readFileSync(p, "utf8"))).toHaveProperty("require");
+  });
+});
