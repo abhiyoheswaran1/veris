@@ -17,13 +17,20 @@ import { isPlain } from "../tty.js";
 // (attestations are meant to be shareable/committable proof), so a freshly
 // written attestation is itself untracked immediately after `attest` — which
 // would make a gate run right after an attest spuriously see a "dirty" tree.
-// Freshness should track the tracked SOURCE tree, so changes confined
-// entirely to `.veris/` don't count against it.
+// Freshness should track the tracked SOURCE tree, so ONLY changes confined to
+// `.veris/attestations/` are exempt. Everything else under `.veris/` —
+// notably `policy.json` and `config.json`, which are tracked and read live
+// off disk by `loadPolicy` — must still trip the dirty check. Exempting all
+// of `.veris/` would let an uncommitted, unreviewed edit to policy.json
+// (e.g. dropping `require.signers` or setting `freshness: "off"`) sneak past
+// gate under a falsely "clean" tree.
 async function currentAnchor(root: string): Promise<GitAnchor | null> {
   const anchor = await gitAnchor(root);
   if (!anchor?.dirty) return anchor;
   const cs = await changedFiles(root);
-  const meaningful = cs.files.filter((f) => !f.startsWith(".veris/"));
+  const meaningful = cs.files.filter(
+    (f) => !f.startsWith(".veris/attestations/"),
+  );
   if (meaningful.length > 0) return anchor;
   return { ...anchor, dirty: false, changedFiles: 0 };
 }
