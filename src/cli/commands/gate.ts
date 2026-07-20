@@ -1,16 +1,7 @@
 import { readFileSync } from "node:fs";
 import pc from "picocolors";
-import type { Attestation } from "../../evidence/attestation.js";
 import { keyId } from "../../evidence/signing.js";
-import { latestAttestation } from "../../evidence/store.js";
-import { anchorIgnoringAttestations } from "../../git/changes.js";
-import {
-  evaluatePolicy,
-  loadPolicy,
-  loadPolicyFile,
-  type Policy,
-} from "../../policy/policy.js";
-import { readJsonIfExists } from "../../util/fs-safe.js";
+import { gateProject } from "../../policy/gate-project.js";
 import { isPlain } from "../tty.js";
 
 export async function runGate(
@@ -22,39 +13,6 @@ export async function runGate(
     keyId?: string;
   } = {},
 ): Promise<number> {
-  let policy: Policy;
-  try {
-    policy = opts.policy
-      ? await loadPolicyFile(opts.policy)
-      : await loadPolicy(root);
-  } catch (err) {
-    process.stderr.write(
-      `veris: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
-    return 1;
-  }
-
-  let att: Attestation;
-  if (opts.attestation) {
-    const loaded = await readJsonIfExists<Attestation>(opts.attestation);
-    if (!loaded) {
-      process.stderr.write(
-        `veris: cannot read attestation at ${opts.attestation}\n`,
-      );
-      return 1;
-    }
-    att = loaded;
-  } else {
-    const found = latestAttestation(root);
-    if (!found) {
-      process.stderr.write(
-        "veris: no attestation found — run `veris attest`.\n",
-      );
-      return 1;
-    }
-    att = found.att;
-  }
-
   let pubKeyId: string | undefined;
   if (opts.pubkey) {
     try {
@@ -67,14 +25,17 @@ export async function runGate(
     pubKeyId = opts.keyId;
   }
 
-  const git = await anchorIgnoringAttestations(root);
-  let result: ReturnType<typeof evaluatePolicy>;
-  try {
-    result = evaluatePolicy(att, policy, git, { pubKeyId });
-  } catch {
-    process.stderr.write("veris: malformed attestation\n");
+  const outcome = await gateProject(root, {
+    policy: opts.policy,
+    attestation: opts.attestation,
+    pubKeyId,
+  });
+
+  if (!outcome.ok || !outcome.result) {
+    process.stderr.write(`veris: ${outcome.error}\n`);
     return 1;
   }
+  const result = outcome.result;
 
   const plain = isPlain();
   const mark = (ok: boolean) =>
