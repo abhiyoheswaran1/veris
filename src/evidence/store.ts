@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { VerificationRun } from "../core/model.js";
 import { ensureDir, readJsonIfExists } from "../util/fs-safe.js";
 import type { Attestation } from "./attestation.js";
+import type { AttestationV2 } from "./dsse.js";
 import type { EvidenceRecord } from "./record.js";
 import { sha256 } from "./record.js";
 
@@ -113,7 +114,7 @@ export function attestationsDir(root: string): string {
 export async function writeAttestation(
   root: string,
   id: string,
-  att: Attestation,
+  att: Attestation | AttestationV2,
 ): Promise<string> {
   const dir = attestationsDir(root);
   await ensureDir(dir);

@@ -1,3 +1,10 @@
+import { ed25519Signer } from "../signing/ed25519.js";
+import {
+  ATTESTATION_SCHEMA_V2,
+  type AttestationV2,
+  buildEnvelope,
+  envelopePae,
+} from "./dsse.js";
 import { canonicalize, type EvidenceRecord, sha256 } from "./record.js";
 import { type Signature, signDigest, verifySignature } from "./signing.js";
 
@@ -58,4 +65,58 @@ export function verifyAttestationSignature(att: Attestation): boolean {
   if (!att.signature) return false;
   if (att.signature.digest !== attestationDigest(att.statement)) return false;
   return verifySignature(att.signature);
+}
+
+// Build an unsigned @2 (DSSE) attestation from an evidence record. Same
+// Statement as buildAttestation, wrapped in a DSSE envelope instead of the
+// legacy schema@1 shape. Throws if the record has no git anchor.
+export function buildAttestationV2(record: EvidenceRecord): AttestationV2 {
+  if (!record.git) {
+    throw new Error("cannot attest: evidence has no git anchor");
+  }
+  const statement: Statement = {
+    _type: STATEMENT_TYPE,
+    subject: [
+      { name: record.project.name, digest: { gitCommit: record.git.commit } },
+    ],
+    predicateType: PREDICATE_TYPE,
+    predicate: record,
+  };
+  return { schema: ATTESTATION_SCHEMA_V2, envelope: buildEnvelope(statement) };
+}
+
+// Sign a @2 attestation's envelope PAE with the ed25519 backend, returning a
+// new AttestationV2 whose envelope carries the appended signature (does not
+// mutate the input).
+export async function signAttestationV2(
+  att: AttestationV2,
+  privateKeyPem: string,
+): Promise<AttestationV2> {
+  const sig = await ed25519Signer(privateKeyPem).sign(
+    envelopePae(att.envelope),
+  );
+  return {
+    ...att,
+    envelope: {
+      ...att.envelope,
+      signatures: [...att.envelope.signatures, sig],
+    },
+  };
+}
+
+// Read the Statement out of either a legacy @1 attestation or a @2 DSSE
+// attestation, so gate logic can accept both formats.
+export function attestationStatement(
+  att: Attestation | AttestationV2,
+): Statement {
+  if (
+    "schema" in att &&
+    (att.schema === ATTESTATION_SCHEMA_V2 || "envelope" in att)
+  ) {
+    const env = (att as AttestationV2).envelope;
+    return JSON.parse(
+      Buffer.from(env.payload, "base64").toString("utf8"),
+    ) as Statement;
+  }
+  return (att as Attestation).statement;
 }
