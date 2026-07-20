@@ -59,7 +59,7 @@ export const pylintRunner = makeExecRunner("python", {
   runner: "pylint",
   capId: "lint",
   tool: "pylint",
-  args: ["."],
+  args: ["--recursive=y", "."],
   title: "Lint (pylint)",
   pass: "no lint errors",
   fail: "lint errors",

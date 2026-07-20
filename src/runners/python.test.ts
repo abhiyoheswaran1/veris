@@ -87,6 +87,7 @@ describe("python lint runners", () => {
       ".",
     ]);
     expect(pylintRunner.toCheck(project, lintCap("pylint")).args).toEqual([
+      "--recursive=y",
       ".",
     ]);
   });

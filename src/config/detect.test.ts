@@ -79,6 +79,15 @@ describe("detectProject — polyglot", () => {
   });
 });
 
+describe("detectProject — explicit null config", () => {
+  it("treats an explicit null config as 'no config' without crashing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-null-"));
+    writeFileSync(join(root, "package.json"), JSON.stringify({ name: "x" }));
+    const project = await detectProject(root, null);
+    expect(project.capabilities.every((c) => c.language === "js")).toBe(true);
+  });
+});
+
 describe("detectProject — polyglot fixture end to end", () => {
   it("detects all three languages and every emitted runner name is registered", async () => {
     const project = await detectProject(fx("polyglot"));

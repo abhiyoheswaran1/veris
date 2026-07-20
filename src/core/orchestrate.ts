@@ -39,8 +39,8 @@ export async function verifyProject(
   root: string,
   opts: { partialOk?: boolean; browser?: boolean } = {},
 ): Promise<{ run: VerificationRun; record: EvidenceRecord }> {
-  const project = await detectProject(root);
   const config = await loadConfig(root);
+  const project = await detectProject(root, config);
   const checks = resolveChecks(config?.checks, project, opts);
   const run = await runChecks(project, checks, root);
   const git = await gitAnchor(root);
