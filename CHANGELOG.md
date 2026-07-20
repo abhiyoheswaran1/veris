@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.2 — 2026-07-20
+
+### Added
+- Programmatic `attestProject(root, opts)` and `gateProject(root, opts)` in the library API, so attestation and gating can be driven without the CLI (the `veris attest`/`veris gate` commands now wrap them). Attestation and policy types are exported too.
+
+### Fixed
+- `veris attest` no longer refuses just because a *previous* attestation file is sitting untracked under `.veris/attestations/` — the dirty-tree check now shares gate's exemption for that directory (a real source change still blocks it), so you can attest repeatedly without committing in between.
+- `veris attest` now refuses when the latest verification's evidence is for a different commit than `HEAD` (stale evidence), telling you to re-run `veris verify` instead of producing an attestation that would fail the gate anyway.
+
 ## 0.7.1 — 2026-07-20
 
 ### Changed
