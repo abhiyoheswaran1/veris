@@ -156,7 +156,10 @@ export async function evaluatePolicy(
             pubKeyId: trust.pubKeyId,
           });
           if (res.ok) {
-            acceptedKid = sig.keyid ?? "";
+            // Use the verifier-derived keyid (recomputed from the actual
+            // public key), not sig.keyid — the latter is attacker-supplied
+            // and must never be trusted for display purposes.
+            acceptedKid = res.keyid ?? "";
             break;
           }
           reason = res.reason;

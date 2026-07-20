@@ -263,6 +263,64 @@ describe("evaluatePolicy — @2 DSSE/ed25519 attestations", () => {
     expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
   });
 
+  it("passes a @2 attestation with no policy.require.signers when --pubkey matches the signer", async () => {
+    const kp = generateKeyPair();
+    const att = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+    const kid = att.envelope.signatures[0]?.keyid;
+    if (!kid) throw new Error("expected a signature");
+    const r = await evaluatePolicy(
+      att,
+      { require: {}, freshness: "off" },
+      git,
+      { pubKeyId: kid },
+    );
+    expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(true);
+    expect(r.passed).toBe(true);
+  });
+
+  it("fails a @2 attestation with no policy.require.signers when --pubkey does not match the signer", async () => {
+    const kp = generateKeyPair();
+    const att = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+    const r = await evaluatePolicy(
+      att,
+      { require: {}, freshness: "off" },
+      git,
+      { pubKeyId: "deadbeef" },
+    );
+    expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
+    expect(r.passed).toBe(false);
+  });
+
+  it("displays the verifier-derived key id, not the attacker-claimed sig.keyid", async () => {
+    const kp = generateKeyPair();
+    const att = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+    const realKid = att.envelope.signatures[0]?.keyid;
+    if (!realKid) throw new Error("expected a signature");
+    // Tamper the claimed keyid on the signature; the cryptographic
+    // recomputation inside the verifier must still be what gets displayed.
+    const claimedSig = att.envelope.signatures[0];
+    if (!claimedSig) throw new Error("expected a signature");
+    claimedSig.keyid = "claimed-not-real";
+    const r = await evaluatePolicy(
+      att,
+      { require: { signers: [realKid] }, freshness: "off" },
+      git,
+    );
+    const sigCheck = r.checks.find((c) => c.label === "signature");
+    expect(sigCheck?.ok).toBe(true);
+    expect(sigCheck?.reason).toBe(`signed by ${realKid}`);
+    expect(sigCheck?.reason).not.toContain("claimed-not-real");
+  });
+
   it("SECURITY (@2 tamper): fails when the envelope payload is mutated after signing", async () => {
     const kp = generateKeyPair();
     const signed = await signAttestationV2(

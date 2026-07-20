@@ -32,12 +32,35 @@ describe("ed25519 backend", () => {
     expect(r.ok).toBe(false);
   });
 
-  it("rejects an untrusted key id", async () => {
+  it("rejects an untrusted key id (non-empty signers allowlist)", async () => {
     const kp = generateKeyPair();
     const env = buildEnvelope(statement);
     const sig = await ed25519Signer(kp.privateKeyPem).sign(envelopePae(env));
     const r = await ed25519Verifier.verify(envelopePae(env), sig, {
       signers: ["deadbeef"],
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it("accepts an empty signers allowlist when pubKeyId matches the signer (--pubkey path)", async () => {
+    const kp = generateKeyPair();
+    const env = buildEnvelope(statement);
+    const sig = await ed25519Signer(kp.privateKeyPem).sign(envelopePae(env));
+    const r = await ed25519Verifier.verify(envelopePae(env), sig, {
+      signers: [],
+      pubKeyId: sig.keyid,
+    });
+    expect(r.ok).toBe(true);
+    expect(r.keyid).toBe(sig.keyid);
+  });
+
+  it("rejects an empty signers allowlist when pubKeyId does not match the signer", async () => {
+    const kp = generateKeyPair();
+    const env = buildEnvelope(statement);
+    const sig = await ed25519Signer(kp.privateKeyPem).sign(envelopePae(env));
+    const r = await ed25519Verifier.verify(envelopePae(env), sig, {
+      signers: [],
+      pubKeyId: "deadbeef",
     });
     expect(r.ok).toBe(false);
   });

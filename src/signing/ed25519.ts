@@ -50,11 +50,18 @@ export const ed25519Verifier: Verifier = {
       );
       if (!cryptoOk) return { ok: false, reason: "signature does not verify" };
       const kid = keyId(pub);
-      const allowed = trust.signers.some((s) => s === "*" || s === kid);
+      // Empty `signers` means "no signer-allowlist constraint" — matches the
+      // @1 semantics where an absent/empty allowlist defers entirely to
+      // trust.pubKeyId (or, with neither set, accepts any valid signature).
+      // A non-empty allowlist is still enforced exactly as before.
+      const allowed =
+        trust.signers.length === 0 ||
+        trust.signers.some((s) => s === "*" || s === kid);
       const trustOk = !trust.pubKeyId || trust.pubKeyId === kid;
       const ok = allowed && trustOk;
       return {
         ok,
+        keyid: kid,
         reason: ok ? `signed by ${kid}` : `signer ${kid} not accepted`,
       };
     } catch {

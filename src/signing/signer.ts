@@ -22,5 +22,10 @@ export interface Verifier {
     pae: Buffer,
     sig: DsseSignature,
     trust: SignerTrust,
-  ): Promise<{ ok: boolean; identity?: KeylessIdentity; reason: string }>;
+  ): Promise<{
+    ok: boolean;
+    identity?: KeylessIdentity;
+    reason: string;
+    keyid?: string;
+  }>;
 }
