@@ -125,7 +125,7 @@ export async function writeAttestation(
 
 export function latestAttestation(
   root: string,
-): { path: string; att: Attestation } | null {
+): { path: string; att: Attestation | AttestationV2 } | null {
   try {
     const files = readdirSync(attestationsDir(root))
       .filter((f) => f.endsWith(".att.json"))
@@ -133,7 +133,12 @@ export function latestAttestation(
     const latest = files.at(-1);
     if (!latest) return null;
     const path = join(attestationsDir(root), latest);
-    return { path, att: JSON.parse(readFileSync(path, "utf8")) as Attestation };
+    return {
+      path,
+      att: JSON.parse(readFileSync(path, "utf8")) as
+        | Attestation
+        | AttestationV2,
+    };
   } catch {
     return null;
   }

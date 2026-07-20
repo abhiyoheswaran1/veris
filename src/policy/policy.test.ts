@@ -2,7 +2,14 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildAttestation, signAttestation } from "../evidence/attestation.js";
+import {
+  type Attestation,
+  attestationStatement,
+  buildAttestation,
+  buildAttestationV2,
+  signAttestation,
+  signAttestationV2,
+} from "../evidence/attestation.js";
 import type { EvidenceRecord } from "../evidence/record.js";
 import { computeDigest } from "../evidence/record.js";
 import { generateKeyPair, signatureKeyId } from "../evidence/signing.js";
@@ -48,8 +55,8 @@ function record(
 
 const git = { commit: COMMIT, dirty: false };
 
-describe("evaluatePolicy", () => {
-  it("passes a signed, fresh, verified attestation meeting coverage", () => {
+describe("evaluatePolicy — @1 legacy attestations", () => {
+  it("passes a signed, fresh, verified attestation meeting coverage (legacy @1 back-compat)", async () => {
     const kp = generateKeyPair();
     const att = signAttestation(buildAttestation(record()), kp.privateKeyPem);
     const policy: Policy = {
@@ -61,55 +68,59 @@ describe("evaluatePolicy", () => {
       },
       freshness: "head",
     };
-    const r = evaluatePolicy(att, policy, git);
+    const r = await evaluatePolicy(att, policy, git);
     expect(r.passed).toBe(true);
   });
 
-  it("fails on a tampered predicate (integrity)", () => {
+  it("fails on a tampered predicate (integrity)", async () => {
     const att = buildAttestation(record());
     att.statement.predicate.verdict.state = "failed"; // digest no longer matches
-    const r = evaluatePolicy(att, DEFAULT_POLICY, git);
+    const r = await evaluatePolicy(att, DEFAULT_POLICY, git);
     expect(r.passed).toBe(false);
     expect(r.checks.find((c) => c.label === "integrity")?.ok).toBe(false);
   });
 
-  it("fails a stale commit (freshness)", () => {
+  it("fails a stale commit (freshness)", async () => {
     const att = buildAttestation(record({}, "b".repeat(40)));
-    const r = evaluatePolicy(att, DEFAULT_POLICY, git);
+    const r = await evaluatePolicy(att, DEFAULT_POLICY, git);
     expect(r.checks.find((c) => c.label === "freshness")?.ok).toBe(false);
     expect(r.passed).toBe(false);
   });
 
-  it("fails a dirty tree (freshness)", () => {
+  it("fails a dirty tree (freshness)", async () => {
     const att = buildAttestation(record());
-    const r = evaluatePolicy(att, DEFAULT_POLICY, {
+    const r = await evaluatePolicy(att, DEFAULT_POLICY, {
       commit: COMMIT,
       dirty: true,
     });
     expect(r.checks.find((c) => c.label === "freshness")?.ok).toBe(false);
   });
 
-  it("fails a partial verdict under require verified, passes under partial-ok", () => {
+  it("fails a partial verdict under require verified, passes under partial-ok", async () => {
     const att = buildAttestation(record({ state: "partial" }));
     expect(
-      evaluatePolicy(
-        att,
-        { require: { verdict: "verified" }, freshness: "off" },
-        git,
+      (
+        await evaluatePolicy(
+          att,
+          { require: { verdict: "verified" }, freshness: "off" },
+          git,
+        )
       ).passed,
     ).toBe(false);
     expect(
-      evaluatePolicy(
-        att,
-        { require: { verdict: "partial-ok" }, freshness: "off" },
-        git,
+      (
+        await evaluatePolicy(
+          att,
+          { require: { verdict: "partial-ok" }, freshness: "off" },
+          git,
+        )
       ).passed,
     ).toBe(true);
   });
 
-  it("fails when a required capability×language is not verified", () => {
+  it("fails when a required capability×language is not verified", async () => {
     const att = buildAttestation(record());
-    const r = evaluatePolicy(
+    const r = await evaluatePolicy(
       att,
       {
         require: { capabilities: ["unit"], languages: ["python"] },
@@ -123,9 +134,9 @@ describe("evaluatePolicy", () => {
     );
   });
 
-  it("requires a valid signature when signers is set; unsigned fails", () => {
+  it("requires a valid signature when signers is set; unsigned fails", async () => {
     const att = buildAttestation(record()); // unsigned
-    const r = evaluatePolicy(
+    const r = await evaluatePolicy(
       att,
       { require: { signers: ["*"] }, freshness: "off" },
       git,
@@ -133,10 +144,10 @@ describe("evaluatePolicy", () => {
     expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
   });
 
-  it("rejects an untrusted signer", () => {
+  it("rejects an untrusted signer", async () => {
     const kp = generateKeyPair();
     const att = signAttestation(buildAttestation(record()), kp.privateKeyPem);
-    const r = evaluatePolicy(
+    const r = await evaluatePolicy(
       att,
       { require: { signers: ["deadbeef"] }, freshness: "off" },
       git,
@@ -144,21 +155,21 @@ describe("evaluatePolicy", () => {
     expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
   });
 
-  it("rejects a forged subject that no longer matches the digest-protected evidence commit", () => {
+  it("rejects a forged subject that no longer matches the digest-protected evidence commit", async () => {
     // Unsigned attestation whose real (digest-protected) evidence is for a
     // stale commit. An attacker edits ONLY the subject (which lives outside
     // the predicate digest) to point at current HEAD.
     const att = buildAttestation(record({}, "b".repeat(40)));
     const subject = att.statement.subject[0];
     if (subject) subject.digest.gitCommit = COMMIT;
-    const r = evaluatePolicy(att, DEFAULT_POLICY, git);
+    const r = await evaluatePolicy(att, DEFAULT_POLICY, git);
     expect(r.passed).toBe(false);
     expect(r.checks.find((c) => c.label === "integrity")?.ok).toBe(false);
   });
 
-  it("matches a capability-only requirement against composite verifiedCapabilities keys", () => {
+  it("matches a capability-only requirement against composite verifiedCapabilities keys", async () => {
     const att = buildAttestation(record());
-    const r = evaluatePolicy(
+    const r = await evaluatePolicy(
       att,
       { require: { capabilities: ["unit"] }, freshness: "off" },
       git,
@@ -166,7 +177,7 @@ describe("evaluatePolicy", () => {
     expect(r.passed).toBe(true);
   });
 
-  it("treats a lone string signer as an exact-match single-element list, not a substring match", () => {
+  it("treats a lone string signer as an exact-match single-element list, not a substring match", async () => {
     const kp = generateKeyPair();
     const att = signAttestation(buildAttestation(record()), kp.privateKeyPem);
     if (!att.signature) throw new Error("expected a signature");
@@ -177,14 +188,185 @@ describe("evaluatePolicy", () => {
       require: { signers: kid as unknown as string[] },
       freshness: "off",
     } satisfies Policy;
-    expect(evaluatePolicy(att, policy, git).passed).toBe(true);
+    expect((await evaluatePolicy(att, policy, git)).passed).toBe(true);
 
     // A different id must NOT pass just because it shares characters with kid.
     const otherPolicy = {
       require: { signers: `x${kid}` as unknown as string[] },
       freshness: "off",
     } satisfies Policy;
-    expect(evaluatePolicy(att, otherPolicy, git).passed).toBe(false);
+    expect((await evaluatePolicy(att, otherPolicy, git)).passed).toBe(false);
+  });
+});
+
+describe("evaluatePolicy — @2 DSSE/ed25519 attestations", () => {
+  it("passes a signed @2 attestation whose signer matches policy.require.signers", async () => {
+    const kp = generateKeyPair();
+    const att = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+    const kid = att.envelope.signatures[0]?.keyid;
+    if (!kid) throw new Error("expected a signature");
+    const policy: Policy = {
+      require: {
+        verdict: "verified",
+        capabilities: ["unit"],
+        languages: ["js"],
+        signers: [kid],
+      },
+      freshness: "head",
+    };
+    const r = await evaluatePolicy(att, policy, git);
+    expect(r.passed).toBe(true);
+  });
+
+  it("fails an unsigned @2 attestation when a signer is required", async () => {
+    const att = buildAttestationV2(record());
+    const r = await evaluatePolicy(
+      att,
+      { require: { signers: ["*"] }, freshness: "off" },
+      git,
+    );
+    expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
+    expect(r.passed).toBe(false);
+  });
+
+  it("fails closed on a @2 signature with backend:cosign (not yet supported)", async () => {
+    const att = buildAttestationV2(record());
+    att.envelope.signatures.push({
+      backend: "cosign",
+      sig: "not-a-real-signature",
+      cert: "not-a-real-cert",
+    });
+    const r = await evaluatePolicy(
+      att,
+      { require: { signers: ["*"] }, freshness: "off" },
+      git,
+    );
+    const sigCheck = r.checks.find((c) => c.label === "signature");
+    expect(sigCheck?.ok).toBe(false);
+    expect(sigCheck?.reason).toMatch(/cosign verification not yet supported/);
+  });
+
+  it("rejects an untrusted @2 signer", async () => {
+    const kp = generateKeyPair();
+    const att = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+    const r = await evaluatePolicy(
+      att,
+      { require: { signers: ["deadbeef"] }, freshness: "off" },
+      git,
+    );
+    expect(r.checks.find((c) => c.label === "signature")?.ok).toBe(false);
+  });
+
+  it("SECURITY (@2 tamper): fails when the envelope payload is mutated after signing", async () => {
+    const kp = generateKeyPair();
+    const signed = await signAttestationV2(
+      buildAttestationV2(record()),
+      kp.privateKeyPem,
+    );
+
+    // Decode, tamper the predicate verdict WITHOUT recomputing the embedded
+    // digest, re-encode — the original ed25519 signature (over the original
+    // envelope bytes) is now stale either way.
+    const stmt = JSON.parse(
+      Buffer.from(signed.envelope.payload, "base64").toString("utf8"),
+    );
+    stmt.predicate.verdict.state = "failed";
+    const tampered = {
+      ...signed,
+      envelope: {
+        ...signed.envelope,
+        payload: Buffer.from(JSON.stringify(stmt), "utf8").toString("base64"),
+      },
+    };
+
+    const kid = signed.envelope.signatures[0]?.keyid;
+    const r = await evaluatePolicy(
+      tampered,
+      { require: { signers: kid ? [kid] : ["*"] }, freshness: "off" },
+      git,
+    );
+    expect(r.passed).toBe(false);
+    // Either the integrity check (digest/canonical mismatch) or the
+    // signature check (PAE no longer matches) must catch this — both are
+    // acceptable, but at least one must fail.
+    const integrity = r.checks.find((c) => c.label === "integrity");
+    const signature = r.checks.find((c) => c.label === "signature");
+    expect(integrity?.ok === false || signature?.ok === false).toBe(true);
+  });
+
+  it("matches the same subject/predicate whether read via @1 or @2 (attestationStatement parity)", async () => {
+    const rec = record();
+    const v1 = buildAttestation(rec);
+    const v2 = buildAttestationV2(rec);
+    expect(attestationStatement(v1).subject).toEqual(
+      attestationStatement(v2).subject,
+    );
+  });
+});
+
+describe("evaluatePolicy — SECURITY regressions", () => {
+  it("parser-differential: ignores a malicious `envelope` bolted onto a legitimately-signed @1 attestation", async () => {
+    const kp = generateKeyPair();
+    // Honestly-signed @1 statement — the real, digest-protected verdict is
+    // FAILED, and the signature covers exactly that.
+    const benign = signAttestation(
+      buildAttestation(record({ state: "failed" })),
+      kp.privateKeyPem,
+    );
+    if (!benign.signature) throw new Error("expected a signature");
+
+    // Attacker crafts a favorable but forged statement (failed -> verified)
+    // and bolts it on as `envelope`, hoping a heuristic reader treats
+    // "has an envelope" as "read the @2 path" while the (still-valid)
+    // signature check runs over the untouched, honestly-attested @1
+    // `statement`.
+    const maliciousStatement = {
+      ...benign.statement,
+      predicate: {
+        ...benign.statement.predicate,
+        verdict: { ...benign.statement.predicate.verdict, state: "verified" },
+      },
+    };
+    const forged = {
+      ...benign,
+      envelope: {
+        payloadType: "application/vnd.in-toto+json",
+        payload: Buffer.from(
+          JSON.stringify(maliciousStatement),
+          "utf8",
+        ).toString("base64"),
+        signatures: [],
+      },
+    } as unknown as Attestation;
+
+    // attestationStatement must return the SIGNED @1 statement (failed),
+    // never the forged envelope's (verified).
+    expect(attestationStatement(forged).predicate.verdict.state).toBe("failed");
+
+    const kid = signatureKeyId(benign.signature);
+    const r = await evaluatePolicy(
+      forged,
+      { require: { verdict: "verified", signers: [kid] }, freshness: "head" },
+      git,
+    );
+    // The differential must not flip the verdict: gate correctly fails on
+    // the real (failed) verdict instead of trusting the malicious envelope.
+    expect(r.passed).toBe(false);
+    expect(r.checks.find((c) => c.label === "verdict")?.ok).toBe(false);
+  });
+
+  it("throws (fails closed) on an attestation with an unknown schema — never guesses a format", async () => {
+    const att = buildAttestation(record());
+    const unknown = { ...att, schema: "veriskit/attestation@9" };
+    await expect(evaluatePolicy(unknown, DEFAULT_POLICY, git)).rejects.toThrow(
+      /unknown attestation schema/,
+    );
   });
 });
 

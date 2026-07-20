@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
-import type { Attestation } from "./attestation.js";
+import { type Attestation, attestationStatement } from "./attestation.js";
 import type { EvidenceRecord } from "./record.js";
 import { sha256 } from "./record.js";
 import {
@@ -129,9 +129,9 @@ describe("attestation store", () => {
     const root = mkdtempSync(join(tmpdir(), "veris-att-"));
     await writeAttestation(root, "run-1", att("a".repeat(40)));
     const found = latestAttestation(root);
-    expect(found?.att.statement.subject[0]?.digest.gitCommit).toBe(
-      "a".repeat(40),
-    );
+    expect(
+      found && attestationStatement(found.att).subject[0]?.digest.gitCommit,
+    ).toBe("a".repeat(40));
     expect(found?.path.startsWith(attestationsDir(root))).toBe(true);
   });
 

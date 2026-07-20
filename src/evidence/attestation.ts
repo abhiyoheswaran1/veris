@@ -106,17 +106,39 @@ export async function signAttestationV2(
 
 // Read the Statement out of either a legacy @1 attestation or a @2 DSSE
 // attestation, so gate logic can accept both formats.
+//
+// SECURITY: this dispatches on `att.schema` EXACTLY, with no heuristic
+// fallback. An earlier version also treated "has an `envelope` property" as
+// a signal to read the @2 path — that let an attacker take a validly-signed
+// @1 attestation (whose signature covers `att.statement`), bolt on an
+// `envelope` field carrying a *different*, malicious payload, and have the
+// gate's signature check run over `att.statement` while its predicate read
+// came from `envelope.payload`. Signature and statement must always come
+// from the same schema-selected path.
 export function attestationStatement(
   att: Attestation | AttestationV2,
 ): Statement {
-  if (
-    "schema" in att &&
-    (att.schema === ATTESTATION_SCHEMA_V2 || "envelope" in att)
-  ) {
+  if (att.schema === ATTESTATION_SCHEMA_V2) {
     const env = (att as AttestationV2).envelope;
-    return JSON.parse(
-      Buffer.from(env.payload, "base64").toString("utf8"),
-    ) as Statement;
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(Buffer.from(env.payload, "base64").toString("utf8"));
+    } catch {
+      throw new Error("malformed attestation envelope");
+    }
+    if (
+      !decoded ||
+      typeof decoded !== "object" ||
+      !("predicate" in decoded) ||
+      !("subject" in decoded) ||
+      !Array.isArray((decoded as { subject?: unknown }).subject)
+    ) {
+      throw new Error("malformed attestation statement");
+    }
+    return decoded as Statement;
   }
-  return (att as Attestation).statement;
+  if (att.schema === ATTESTATION_SCHEMA) {
+    return (att as Attestation).statement;
+  }
+  throw new Error("unknown attestation schema");
 }
