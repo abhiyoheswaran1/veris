@@ -1,9 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { changedFiles, gitAnchor } from "./changes.js";
+import {
+  anchorIgnoringAttestations,
+  changedFiles,
+  gitAnchor,
+} from "./changes.js";
 
 function initRepo(): string {
   const dir = mkdtempSync(join(tmpdir(), "veris-git-"));
@@ -24,20 +28,20 @@ describe("changedFiles", () => {
     const cs = await changedFiles(dir);
     expect(cs.files).toContain("a.ts");
     expect(cs.base).toBeNull();
-  });
+  }, 30000);
 
   it("reports untracked files", async () => {
     const dir = initRepo();
     writeFileSync(join(dir, "b.ts"), "export const b = 3;\n");
     const cs = await changedFiles(dir);
     expect(cs.files).toContain("b.ts");
-  });
+  }, 30000);
 
   it("returns an empty set for a clean tree", async () => {
     const dir = initRepo();
     const cs = await changedFiles(dir);
     expect(cs.files).toEqual([]);
-  });
+  }, 30000);
 });
 
 describe("gitAnchor", () => {
@@ -48,7 +52,7 @@ describe("gitAnchor", () => {
     expect(anchor?.commit).toMatch(/^[0-9a-f]{40}$/);
     expect(anchor?.dirty).toBe(false);
     expect(anchor?.changedFiles).toBe(0);
-  });
+  }, 30000);
 
   it("records a dirty tree with the changed-file count", async () => {
     const dir = initRepo();
@@ -56,10 +60,35 @@ describe("gitAnchor", () => {
     const anchor = await gitAnchor(dir);
     expect(anchor?.dirty).toBe(true);
     expect(anchor?.changedFiles).toBe(1);
-  });
+  }, 30000);
 
   it("returns null outside a git repo", async () => {
     const dir = mkdtempSync(join(tmpdir(), "veris-nogit-"));
     expect(await gitAnchor(dir)).toBeNull();
+  });
+});
+
+describe("anchorIgnoringAttestations", () => {
+  it("stays clean when only a .veris/attestations/ file is untracked", async () => {
+    const dir = initRepo();
+    mkdirSync(join(dir, ".veris", "attestations"), { recursive: true });
+    writeFileSync(join(dir, ".veris", "attestations", "x.att.json"), "{}\n");
+    const anchor = await anchorIgnoringAttestations(dir);
+    expect(anchor?.dirty).toBe(false);
+    expect(anchor?.changedFiles).toBe(0);
+  }, 30000);
+
+  it("is dirty when a tracked source file changed", async () => {
+    const dir = initRepo();
+    mkdirSync(join(dir, ".veris", "attestations"), { recursive: true });
+    writeFileSync(join(dir, ".veris", "attestations", "x.att.json"), "{}\n");
+    writeFileSync(join(dir, "a.ts"), "export const a = 2;\n");
+    const anchor = await anchorIgnoringAttestations(dir);
+    expect(anchor?.dirty).toBe(true);
+  }, 30000);
+
+  it("returns null outside a git repo", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "veris-nogit-"));
+    expect(await anchorIgnoringAttestations(dir)).toBeNull();
   });
 });

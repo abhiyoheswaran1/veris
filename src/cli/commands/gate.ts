@@ -1,40 +1,8 @@
 import { readFileSync } from "node:fs";
 import pc from "picocolors";
-import type { Attestation } from "../../evidence/attestation.js";
 import { keyId } from "../../evidence/signing.js";
-import { latestAttestation } from "../../evidence/store.js";
-import { changedFiles, type GitAnchor, gitAnchor } from "../../git/changes.js";
-import {
-  evaluatePolicy,
-  loadPolicy,
-  loadPolicyFile,
-  type Policy,
-} from "../../policy/policy.js";
-import { readJsonIfExists } from "../../util/fs-safe.js";
+import { gateProject } from "../../policy/gate-project.js";
 import { isPlain } from "../tty.js";
-
-// gitAnchor's `dirty` reflects the whole working tree, including veriskit's own
-// `.veris/` output. `.veris/attestations` is deliberately not gitignored
-// (attestations are meant to be shareable/committable proof), so a freshly
-// written attestation is itself untracked immediately after `attest` — which
-// would make a gate run right after an attest spuriously see a "dirty" tree.
-// Freshness should track the tracked SOURCE tree, so ONLY changes confined to
-// `.veris/attestations/` are exempt. Everything else under `.veris/` —
-// notably `policy.json` and `config.json`, which are tracked and read live
-// off disk by `loadPolicy` — must still trip the dirty check. Exempting all
-// of `.veris/` would let an uncommitted, unreviewed edit to policy.json
-// (e.g. dropping `require.signers` or setting `freshness: "off"`) sneak past
-// gate under a falsely "clean" tree.
-async function currentAnchor(root: string): Promise<GitAnchor | null> {
-  const anchor = await gitAnchor(root);
-  if (!anchor?.dirty) return anchor;
-  const cs = await changedFiles(root);
-  const meaningful = cs.files.filter(
-    (f) => !f.startsWith(".veris/attestations/"),
-  );
-  if (meaningful.length > 0) return anchor;
-  return { ...anchor, dirty: false, changedFiles: 0 };
-}
 
 export async function runGate(
   root: string,
@@ -45,39 +13,6 @@ export async function runGate(
     keyId?: string;
   } = {},
 ): Promise<number> {
-  let policy: Policy;
-  try {
-    policy = opts.policy
-      ? await loadPolicyFile(opts.policy)
-      : await loadPolicy(root);
-  } catch (err) {
-    process.stderr.write(
-      `veris: ${err instanceof Error ? err.message : String(err)}\n`,
-    );
-    return 1;
-  }
-
-  let att: Attestation;
-  if (opts.attestation) {
-    const loaded = await readJsonIfExists<Attestation>(opts.attestation);
-    if (!loaded) {
-      process.stderr.write(
-        `veris: cannot read attestation at ${opts.attestation}\n`,
-      );
-      return 1;
-    }
-    att = loaded;
-  } else {
-    const found = latestAttestation(root);
-    if (!found) {
-      process.stderr.write(
-        "veris: no attestation found — run `veris attest`.\n",
-      );
-      return 1;
-    }
-    att = found.att;
-  }
-
   let pubKeyId: string | undefined;
   if (opts.pubkey) {
     try {
@@ -90,14 +25,17 @@ export async function runGate(
     pubKeyId = opts.keyId;
   }
 
-  const git = await currentAnchor(root);
-  let result: ReturnType<typeof evaluatePolicy>;
-  try {
-    result = evaluatePolicy(att, policy, git, { pubKeyId });
-  } catch {
-    process.stderr.write("veris: malformed attestation\n");
+  const outcome = await gateProject(root, {
+    policy: opts.policy,
+    attestation: opts.attestation,
+    pubKeyId,
+  });
+
+  if (!outcome.ok || !outcome.result) {
+    process.stderr.write(`veris: ${outcome.error}\n`);
     return 1;
   }
+  const result = outcome.result;
 
   const plain = isPlain();
   const mark = (ok: boolean) =>
