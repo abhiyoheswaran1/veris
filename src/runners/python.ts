@@ -1,49 +1,6 @@
-import {
-  type Capability,
-  type Check,
-  type CheckResult,
-  checkKey,
-  type Project,
-} from "../core/model.js";
-import { resolveBin } from "../util/resolve-bin.js";
-import { type RunContext, type Runner, runViaExec } from "./base.js";
+import { makeExecRunner } from "./base.js";
 
-export interface PythonRunnerSpec {
-  runner: string; // registry key, e.g. "pytest"
-  capId: "unit" | "types" | "lint";
-  tool: string; // binary name, e.g. "pytest"
-  args: string[];
-  title: string;
-  pass: string;
-  fail: string;
-  timeoutMs: number;
-}
-
-export function makePythonRunner(spec: PythonRunnerSpec): Runner {
-  return {
-    id: spec.runner,
-    toCheck(project: Project, _cap: Capability): Check {
-      return {
-        id: spec.capId,
-        language: "python",
-        key: checkKey(spec.capId, "python"),
-        title: spec.title,
-        runner: spec.runner,
-        cmd: resolveBin(project.root, "python", spec.tool),
-        args: spec.args,
-      };
-    },
-    run(check: Check, ctx: RunContext): Promise<CheckResult> {
-      return runViaExec(check, ctx, {
-        pass: spec.pass,
-        fail: spec.fail,
-        timeoutMs: spec.timeoutMs,
-      });
-    },
-  };
-}
-
-export const pytestRunner = makePythonRunner({
+export const pytestRunner = makeExecRunner("python", {
   runner: "pytest",
   capId: "unit",
   tool: "pytest",
@@ -54,7 +11,7 @@ export const pytestRunner = makePythonRunner({
   timeoutMs: 10 * 60_000,
 });
 
-export const mypyRunner = makePythonRunner({
+export const mypyRunner = makeExecRunner("python", {
   runner: "mypy",
   capId: "types",
   tool: "mypy",
@@ -65,7 +22,7 @@ export const mypyRunner = makePythonRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const pyrightRunner = makePythonRunner({
+export const pyrightRunner = makeExecRunner("python", {
   runner: "pyright",
   capId: "types",
   tool: "pyright",
@@ -76,7 +33,7 @@ export const pyrightRunner = makePythonRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const ruffRunner = makePythonRunner({
+export const ruffRunner = makeExecRunner("python", {
   runner: "ruff",
   capId: "lint",
   tool: "ruff",
@@ -87,7 +44,7 @@ export const ruffRunner = makePythonRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const flake8Runner = makePythonRunner({
+export const flake8Runner = makeExecRunner("python", {
   runner: "flake8",
   capId: "lint",
   tool: "flake8",
@@ -98,11 +55,11 @@ export const flake8Runner = makePythonRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const pylintRunner = makePythonRunner({
+export const pylintRunner = makeExecRunner("python", {
   runner: "pylint",
   capId: "lint",
   tool: "pylint",
-  args: ["."],
+  args: ["--recursive=y", "."],
   title: "Lint (pylint)",
   pass: "no lint errors",
   fail: "lint errors",

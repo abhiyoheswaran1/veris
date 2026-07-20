@@ -1,49 +1,6 @@
-import {
-  type Capability,
-  type Check,
-  type CheckResult,
-  checkKey,
-  type Project,
-} from "../core/model.js";
-import { resolveBin } from "../util/resolve-bin.js";
-import { type RunContext, type Runner, runViaExec } from "./base.js";
+import { makeExecRunner } from "./base.js";
 
-export interface GoRunnerSpec {
-  runner: string; // registry key, e.g. "go-test"
-  capId: "unit" | "types" | "lint";
-  tool: string; // binary name, e.g. "go"
-  args: string[];
-  title: string;
-  pass: string;
-  fail: string;
-  timeoutMs: number;
-}
-
-export function makeGoRunner(spec: GoRunnerSpec): Runner {
-  return {
-    id: spec.runner,
-    toCheck(project: Project, _cap: Capability): Check {
-      return {
-        id: spec.capId,
-        language: "go",
-        key: checkKey(spec.capId, "go"),
-        title: spec.title,
-        runner: spec.runner,
-        cmd: resolveBin(project.root, "go", spec.tool),
-        args: spec.args,
-      };
-    },
-    run(check: Check, ctx: RunContext): Promise<CheckResult> {
-      return runViaExec(check, ctx, {
-        pass: spec.pass,
-        fail: spec.fail,
-        timeoutMs: spec.timeoutMs,
-      });
-    },
-  };
-}
-
-export const goTestRunner = makeGoRunner({
+export const goTestRunner = makeExecRunner("go", {
   runner: "go-test",
   capId: "unit",
   tool: "go",
@@ -54,7 +11,7 @@ export const goTestRunner = makeGoRunner({
   timeoutMs: 10 * 60_000,
 });
 
-export const goBuildRunner = makeGoRunner({
+export const goBuildRunner = makeExecRunner("go", {
   runner: "go-build",
   capId: "types",
   tool: "go",
@@ -65,7 +22,7 @@ export const goBuildRunner = makeGoRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const golangciLintRunner = makeGoRunner({
+export const golangciLintRunner = makeExecRunner("go", {
   runner: "golangci-lint",
   capId: "lint",
   tool: "golangci-lint",
@@ -76,7 +33,7 @@ export const golangciLintRunner = makeGoRunner({
   timeoutMs: 5 * 60_000,
 });
 
-export const goVetRunner = makeGoRunner({
+export const goVetRunner = makeExecRunner("go", {
   runner: "go-vet",
   capId: "lint",
   tool: "go",

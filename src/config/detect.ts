@@ -24,7 +24,7 @@ export async function detectProject(
   root: string,
   config?: VerisConfig | null,
 ): Promise<Project> {
-  const cfg = config ?? (await loadConfig(root));
+  const cfg = config === undefined ? await loadConfig(root) : config;
   const pkg =
     (await readJsonIfExists<PkgJson>(join(root, "package.json"))) ?? {};
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };

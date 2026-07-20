@@ -14,6 +14,9 @@ export function computeVerdict(
   const verifiedCapabilities: string[] = [];
 
   const anyFailed = results.some((r) => r.status === "failed");
+  const spans = new Set(capabilities.map((c) => c.language)).size > 1;
+  const labelOf = (cap: Capability) =>
+    spans ? `${cap.id} (${cap.language})` : cap.id;
 
   for (const cap of capabilities) {
     const key = checkKey(cap.id, cap.language);
@@ -21,7 +24,9 @@ export function computeVerdict(
 
     if (!cap.available) {
       skipped.push(key);
-      reasons.push(`${cap.id} skipped — ${cap.reason ?? "not configured"}`);
+      reasons.push(
+        `${labelOf(cap)} skipped — ${cap.reason ?? "not configured"}`,
+      );
       continue;
     }
     if (result?.status === "passed") {
@@ -29,11 +34,13 @@ export function computeVerdict(
       continue;
     }
     if (result?.status === "failed") {
-      reasons.push(`${cap.id} failed — ${result.summary}`);
+      reasons.push(`${labelOf(cap)} failed — ${result.summary}`);
       continue;
     }
     skipped.push(key);
-    reasons.push(`${cap.id} skipped — ${result?.summary ?? "did not run"}`);
+    reasons.push(
+      `${labelOf(cap)} skipped — ${result?.summary ?? "did not run"}`,
+    );
   }
 
   let state: Verdict["state"];

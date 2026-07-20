@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { accessSync, constants, existsSync, statSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import type { Language } from "../core/model.js";
 
@@ -20,6 +20,19 @@ function nameVariants(name: string): string[] {
   return [name, `${name}.exe`, `${name}.cmd`, `${name}.bat`];
 }
 
+// True only for a regular file that is executable. On Windows an extension
+// match (via nameVariants) implies executability, so isFile() is enough.
+function isExecutableFile(p: string): boolean {
+  try {
+    if (!statSync(p).isFile()) return false;
+    if (process.platform === "win32") return true;
+    accessSync(p, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Resolve a tool to a concrete command string. JS always yields the
 // node_modules/.bin path (identical to the old localBin). Python yields a venv
 // path when present, else the bare name (resolved via PATH at spawn time). Go
@@ -30,8 +43,10 @@ export function resolveBin(
   name: string,
 ): string {
   for (const dir of searchDirs(root, language)) {
-    const p = join(dir, name);
-    if (existsSync(p)) return p;
+    for (const variant of nameVariants(name)) {
+      const p = join(dir, variant);
+      if (existsSync(p)) return p;
+    }
   }
   if (language === "js") return join(root, "node_modules", ".bin", name);
   return name;
@@ -43,10 +58,9 @@ export function binExists(
   language: Language,
   name: string,
 ): boolean {
-  const dirs = [...searchDirs(root, language), ...pathDirs()];
-  for (const dir of dirs) {
+  for (const dir of [...searchDirs(root, language), ...pathDirs()]) {
     for (const variant of nameVariants(name)) {
-      if (existsSync(join(dir, variant))) return true;
+      if (isExecutableFile(join(dir, variant))) return true;
     }
   }
   return false;
