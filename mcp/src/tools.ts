@@ -1,9 +1,11 @@
 import {
   affectedProject,
   analyze,
+  attestProject,
   buildGraph,
   detectFlaky,
   detectProject,
+  gateProject,
   getEnvironmentInfo,
   loadRuns,
   verifyEvidenceFile,
@@ -111,6 +113,32 @@ export async function verifyHandler(input: {
     digest: record.digest,
     git: record.git,
   });
+}
+
+export async function attestHandler(input: {
+  path?: string;
+}): Promise<ToolResult> {
+  const o = await attestProject(root(input));
+  if (!o.ok) return fail(o.error ?? "attest failed");
+  return json({
+    path: o.path,
+    subjectCommit: o.subjectCommit,
+    verdict: o.verdict,
+    signer: o.signerKeyId ?? null,
+  });
+}
+
+export async function gateHandler(input: {
+  path?: string;
+  policy?: string;
+  attestation?: string;
+}): Promise<ToolResult> {
+  const o = await gateProject(root(input), {
+    policy: input.policy,
+    attestation: input.attestation,
+  });
+  if (!o.ok || !o.result) return fail(o.error ?? "gate failed");
+  return json({ passed: o.result.passed, checks: o.result.checks });
 }
 
 export async function affectedHandler(input: {

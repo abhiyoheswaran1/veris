@@ -1,6 +1,6 @@
 {
   "name": "veriskit-mcp",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Model Context Protocol server for VerisKit: verify software and check evidence over MCP.",
   "type": "module",
   "license": "MIT",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "veriskit": "^0.6.0",
+    "veriskit": "^0.7.2",
     "zod": "^3.25.0"
   }
 }
