@@ -9,7 +9,7 @@ import {
   writeEvidence,
   writeReport,
 } from "../evidence/store.js";
-import { changedFiles, gitAnchor } from "../git/changes.js";
+import { anchorIgnoringAttestations, changedFiles } from "../git/changes.js";
 import { renderMarkdown } from "../reporters/markdown.js";
 import { VERSION } from "../version.js";
 import {
@@ -43,7 +43,7 @@ export async function verifyProject(
   const project = await detectProject(root, config);
   const checks = resolveChecks(config?.checks, project, opts);
   const run = await runChecks(project, checks, root);
-  const git = await gitAnchor(root);
+  const git = await anchorIgnoringAttestations(root);
   const logDigests = await digestLogs(run);
   const record = buildRecord(run, git, logDigests, VERSION);
   const reportRef = await writeReport(
@@ -113,7 +113,7 @@ export async function affectedProject(
     }
   }
 
-  const git = await gitAnchor(root);
+  const git = await anchorIgnoringAttestations(root);
   const logDigests = await digestLogs(run);
   const record = buildRecord(run, git, logDigests, VERSION);
   const reportRef = await writeReport(

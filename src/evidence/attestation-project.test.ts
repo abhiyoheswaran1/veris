@@ -34,7 +34,12 @@ function repo(): { root: string; commit: string } {
   return { root, commit };
 }
 
-function writeEvidence(root: string, commit: string, id = "r1"): void {
+function writeEvidence(
+  root: string,
+  commit: string,
+  id = "r1",
+  opts: { dirty?: boolean } = {},
+): void {
   const runDir = join(root, ".veris", "runs", id);
   mkdirSync(runDir, { recursive: true });
   const record = {
@@ -42,7 +47,12 @@ function writeEvidence(root: string, commit: string, id = "r1"): void {
     id,
     startedAt: "t",
     tool: { name: "veriskit", version: "0.6.1" },
-    git: { commit, branch: "main", dirty: false, changedFiles: 0 },
+    git: {
+      commit,
+      branch: "main",
+      dirty: opts.dirty ?? false,
+      changedFiles: opts.dirty ? 1 : 0,
+    },
     env: { os: "linux", node: "v24", pm: "npm", ci: false, timestamp: "t" },
     project: {
       name: "demo",
@@ -83,6 +93,16 @@ describe("attestProject", () => {
     const { root, commit } = repo();
     writeEvidence(root, commit);
     writeFileSync(join(root, "f.txt"), "changed\n");
+    const outcome = await attestProject(root);
+    expect(outcome.ok).toBe(false);
+    expect(outcome.error).toMatch(/dirty/);
+  }, 30000);
+
+  it("returns ok:false with a dirty-tree error when evidence recorded a dirty source at verify time, even if the tree is now clean (regression: attest must refuse a dirty-at-verify commit)", async () => {
+    const { root, commit } = repo();
+    writeEvidence(root, commit, "r1", { dirty: true });
+    // Live tree is clean and HEAD matches — only the recorded evidence
+    // says the source was dirty when verify ran.
     const outcome = await attestProject(root);
     expect(outcome.ok).toBe(false);
     expect(outcome.error).toMatch(/dirty/);

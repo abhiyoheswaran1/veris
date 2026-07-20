@@ -37,6 +37,12 @@ export async function attestProject(
   if (!record.git) {
     return { ok: false, error: "cannot attest outside a git repository." };
   }
+  if (record.git.dirty) {
+    return {
+      ok: false,
+      error: "cannot attest a dirty tree — commit or stash first.",
+    };
+  }
   const anchor = await anchorIgnoringAttestations(root);
   if (!anchor) {
     return { ok: false, error: "cannot attest outside a git repository." };
