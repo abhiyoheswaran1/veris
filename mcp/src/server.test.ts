@@ -18,7 +18,7 @@ describe("veriskit-mcp server", () => {
     await client.close();
   });
 
-  it("lists the seven tools with correct read-only annotations", async () => {
+  it("lists the nine tools with correct read-only annotations", async () => {
     const server = createServer();
     const [ct, st] = InMemoryTransport.createLinkedPair();
     const client = new Client({ name: "t", version: "0.0.0" });
@@ -28,8 +28,10 @@ describe("veriskit-mcp server", () => {
     expect(names).toEqual(
       [
         "veris_affected",
+        "veris_attest",
         "veris_doctor",
         "veris_evidence_verify",
+        "veris_gate",
         "veris_log",
         "veris_plan",
         "veris_scan",
@@ -40,6 +42,10 @@ describe("veriskit-mcp server", () => {
     expect(doctor?.annotations?.readOnlyHint).toBe(true);
     const verify = tools.find((t) => t.name === "veris_verify");
     expect(verify?.annotations?.readOnlyHint).toBe(false);
+    const attest = tools.find((t) => t.name === "veris_attest");
+    expect(attest?.annotations?.readOnlyHint).toBe(false);
+    const gate = tools.find((t) => t.name === "veris_gate");
+    expect(gate?.annotations?.readOnlyHint).toBe(true);
     await client.close();
   });
 });

@@ -2,12 +2,12 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
   "name": "io.github.abhiyoheswaran1/veriskit",
   "description": "Verify software and check evidence with VerisKit, over MCP.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "veriskit-mcp",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "transport": { "type": "stdio" }
     }
   ]

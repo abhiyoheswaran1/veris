@@ -3,8 +3,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import {
   affectedHandler,
+  attestHandler,
   doctorHandler,
   evidenceVerifyHandler,
+  gateHandler,
   logHandler,
   planHandler,
   scanHandler,
@@ -21,7 +23,7 @@ const pathArg = {
 };
 
 export function createServer(): McpServer {
-  const server = new McpServer({ name: "veriskit", version: "0.6.0" });
+  const server = new McpServer({ name: "veriskit", version: "0.7.0" });
 
   server.registerTool(
     "veris_doctor",
@@ -104,6 +106,33 @@ export function createServer(): McpServer {
       annotations: EXECUTES,
     },
     (args) => affectedHandler(args),
+  );
+  server.registerTool(
+    "veris_attest",
+    {
+      description:
+        "Sign the latest verification into a portable attestation of the exact commit (refuses a dirty/stale tree).",
+      inputSchema: pathArg,
+      annotations: EXECUTES,
+    },
+    (args) => attestHandler(args),
+  );
+  server.registerTool(
+    "veris_gate",
+    {
+      description:
+        "Check the latest attestation against .veris/policy.json — pass/fail with per-check reasons.",
+      inputSchema: {
+        ...pathArg,
+        policy: z.string().optional().describe("Path to a policy file"),
+        attestation: z
+          .string()
+          .optional()
+          .describe("Path to an attestation file"),
+      },
+      annotations: READ_ONLY,
+    },
+    (args) => gateHandler(args),
   );
 
   return server;
