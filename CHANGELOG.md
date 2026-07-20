@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.1 — 2026-07-20
+
+### Changed
+- Skip/fail reasons in a verdict are now language-qualified (for example `unit (python) skipped …`) when a run spans more than one language, matching the per-check display. Single-language (including JavaScript-only) runs are unchanged.
+
+### Fixed
+- `pylint` is now run with `--recursive=y` so it lints the whole project tree, not just the top level.
+- Python/Go tool detection now requires an actual executable file: a non-executable file — or a directory — that happens to share a tool's name no longer counts as "installed."
+
 ## 0.7.0 — 2026-07-20
 
 ### Added
