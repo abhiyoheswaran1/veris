@@ -11,6 +11,11 @@ export type {
 export type { AffectedOutcome } from "./core/orchestrate.js";
 export { affectedProject, verifyProject } from "./core/orchestrate.js";
 export type { Attestation, Statement } from "./evidence/attestation.js";
+export type {
+  AttestationV2,
+  DsseEnvelope,
+  DsseSignature,
+} from "./evidence/dsse.js";
 export type { AttestOutcome } from "./evidence/attestation-project.js";
 export { attestProject } from "./evidence/attestation-project.js";
 export type { EvidenceRecord } from "./evidence/record.js";
