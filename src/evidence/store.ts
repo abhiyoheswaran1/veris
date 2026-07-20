@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { VerificationRun } from "../core/model.js";
 import { ensureDir, readJsonIfExists } from "../util/fs-safe.js";
 import type { Attestation } from "./attestation.js";
+import type { AttestationV2 } from "./dsse.js";
 import type { EvidenceRecord } from "./record.js";
 import { sha256 } from "./record.js";
 
@@ -113,7 +114,7 @@ export function attestationsDir(root: string): string {
 export async function writeAttestation(
   root: string,
   id: string,
-  att: Attestation,
+  att: Attestation | AttestationV2,
 ): Promise<string> {
   const dir = attestationsDir(root);
   await ensureDir(dir);
@@ -124,7 +125,7 @@ export async function writeAttestation(
 
 export function latestAttestation(
   root: string,
-): { path: string; att: Attestation } | null {
+): { path: string; att: Attestation | AttestationV2 } | null {
   try {
     const files = readdirSync(attestationsDir(root))
       .filter((f) => f.endsWith(".att.json"))
@@ -132,7 +133,12 @@ export function latestAttestation(
     const latest = files.at(-1);
     if (!latest) return null;
     const path = join(attestationsDir(root), latest);
-    return { path, att: JSON.parse(readFileSync(path, "utf8")) as Attestation };
+    return {
+      path,
+      att: JSON.parse(readFileSync(path, "utf8")) as
+        | Attestation
+        | AttestationV2,
+    };
   } catch {
     return null;
   }

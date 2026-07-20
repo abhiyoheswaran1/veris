@@ -230,8 +230,13 @@ Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` keeps `runs/`,
 ## Provable verification
 
 `veris attest` turns the latest `veris verify` run into a signed, portable
-attestation of the exact commit — an in-toto statement wrapping the evidence
-record, written to `.veris/attestations/<run-id>.att.json`:
+attestation of the exact commit — a standard **DSSE / in-toto** envelope
+(`veriskit/attestation@2`) wrapping the evidence record, written to
+`.veris/attestations/<run-id>.att.json`. Because it's a DSSE envelope, the
+attestation is verifiable by `cosign` and the wider supply-chain ecosystem, not
+only by `veris gate`. Signing is pluggable — the built-in zero-dependency
+**ed25519** backend signs it today; **keyless signing via `cosign`
+(Fulcio + Rekor) is coming next**.
 
 ```bash
 veris attest                          # unsigned, or signed if VERISKIT_SIGNING_KEY is set

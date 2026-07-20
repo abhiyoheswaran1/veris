@@ -1,4 +1,5 @@
 import type { Attestation } from "../evidence/attestation.js";
+import type { AttestationV2 } from "../evidence/dsse.js";
 import { latestAttestation } from "../evidence/store.js";
 import { anchorIgnoringAttestations } from "../git/changes.js";
 import { readJsonIfExists } from "../util/fs-safe.js";
@@ -37,10 +38,12 @@ export async function gateProject(
     };
   }
 
-  let att: Attestation;
+  let att: Attestation | AttestationV2;
   let attestationPath: string | undefined;
   if (opts.attestation) {
-    const loaded = await readJsonIfExists<Attestation>(opts.attestation);
+    const loaded = await readJsonIfExists<Attestation | AttestationV2>(
+      opts.attestation,
+    );
     if (!loaded) {
       return {
         ok: false,
@@ -64,7 +67,9 @@ export async function gateProject(
   const git = await anchorIgnoringAttestations(root);
   let result: GateResult;
   try {
-    result = evaluatePolicy(att, policy, git, { pubKeyId: opts.pubKeyId });
+    result = await evaluatePolicy(att, policy, git, {
+      pubKeyId: opts.pubKeyId,
+    });
   } catch {
     return { ok: false, error: "malformed attestation" };
   }

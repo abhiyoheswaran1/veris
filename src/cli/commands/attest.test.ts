@@ -3,6 +3,8 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { attestationStatement } from "../../evidence/attestation.js";
+import type { AttestationV2 } from "../../evidence/dsse.js";
 import { latestAttestation } from "../../evidence/store.js";
 import { runAttest } from "./attest.js";
 
@@ -73,8 +75,12 @@ describe("runAttest", () => {
     const code = await runAttest(root);
     expect(code).toBe(0);
     const found = latestAttestation(root);
-    expect(found?.att.statement.subject[0]?.digest.gitCommit).toBe(commit);
-    expect(found?.att.signature).toBeNull();
+    expect(found).toBeTruthy();
+    if (!found) throw new Error("unreachable");
+    const attV2 = found.att as unknown as AttestationV2;
+    const statement = attestationStatement(attV2);
+    expect(statement.subject[0]?.digest.gitCommit).toBe(commit);
+    expect(attV2.envelope.signatures).toEqual([]);
   }, 30000);
 
   it("refuses a dirty tree", async () => {
@@ -99,7 +105,11 @@ describe("runAttest", () => {
     process.env.VERISKIT_SIGNING_KEY = kp.privateKeyPem;
     try {
       expect(await runAttest(root)).toBe(0);
-      expect(latestAttestation(root)?.att.signature).not.toBeNull();
+      const found = latestAttestation(root);
+      expect(
+        (found?.att as unknown as AttestationV2 | undefined)?.envelope
+          .signatures,
+      ).toHaveLength(1);
     } finally {
       if (prev === undefined) delete process.env.VERISKIT_SIGNING_KEY;
       else process.env.VERISKIT_SIGNING_KEY = prev;

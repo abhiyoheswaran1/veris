@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { ed25519Verifier } from "../signing/ed25519.js";
 import {
   ATTESTATION_SCHEMA,
+  attestationStatement,
   buildAttestation,
+  buildAttestationV2,
   PREDICATE_TYPE,
   STATEMENT_TYPE,
   signAttestation,
+  signAttestationV2,
   verifyAttestationSignature,
 } from "./attestation.js";
+import { ATTESTATION_SCHEMA_V2, envelopePae } from "./dsse.js";
 import type { EvidenceRecord } from "./record.js";
 import { generateKeyPair } from "./signing.js";
 
@@ -84,5 +89,58 @@ describe("signAttestation / verifyAttestationSignature", () => {
 
   it("is false for an unsigned attestation", () => {
     expect(verifyAttestationSignature(buildAttestation(record()))).toBe(false);
+  });
+});
+
+describe("buildAttestationV2", () => {
+  it("wraps the record as a DSSE @2 envelope over the same statement", () => {
+    const att = buildAttestationV2(record());
+    expect(att.schema).toBe(ATTESTATION_SCHEMA_V2);
+    expect(att.envelope.signatures).toEqual([]);
+    const statement = JSON.parse(
+      Buffer.from(att.envelope.payload, "base64").toString("utf8"),
+    );
+    expect(statement._type).toBe(STATEMENT_TYPE);
+    expect(statement.predicateType).toBe(PREDICATE_TYPE);
+    expect(statement.subject[0]).toEqual({
+      name: "demo",
+      digest: { gitCommit: "a".repeat(40) },
+    });
+  });
+
+  it("throws when the record has no git anchor", () => {
+    expect(() => buildAttestationV2(record({ git: null }))).toThrow(/git/);
+  });
+});
+
+describe("signAttestationV2", () => {
+  it("produces a signature verifiable over the envelope PAE", async () => {
+    const kp = generateKeyPair();
+    const att = buildAttestationV2(record());
+    const signed = await signAttestationV2(att, kp.privateKeyPem);
+    expect(signed.envelope.signatures).toHaveLength(1);
+    const sig = signed.envelope.signatures[0];
+    expect(sig).toBeDefined();
+    if (!sig) throw new Error("unreachable");
+    expect(sig.backend).toBe("ed25519");
+    const result = await ed25519Verifier.verify(
+      envelopePae(signed.envelope),
+      sig,
+      { signers: ["*"] },
+    );
+    expect(result.ok).toBe(true);
+    // Original attestation's envelope is untouched (copy, not mutate).
+    expect(att.envelope.signatures).toEqual([]);
+  });
+});
+
+describe("attestationStatement", () => {
+  it("returns the same subject for a @1 and a @2 attestation of the same record", () => {
+    const rec = record();
+    const v1 = buildAttestation(rec);
+    const v2 = buildAttestationV2(rec);
+    expect(attestationStatement(v1).subject).toEqual(
+      attestationStatement(v2).subject,
+    );
   });
 });

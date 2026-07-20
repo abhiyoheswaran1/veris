@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs";
 import type { VerdictState } from "../core/model.js";
 import { anchorIgnoringAttestations } from "../git/changes.js";
-import {
-  type Attestation,
-  buildAttestation,
-  signAttestation,
-} from "./attestation.js";
-import { signatureKeyId } from "./signing.js";
+import { buildAttestationV2, signAttestationV2 } from "./attestation.js";
+import type { AttestationV2 } from "./dsse.js";
 import { readLatestRecord, writeAttestation } from "./store.js";
 
 export interface AttestOutcome {
@@ -16,7 +12,7 @@ export interface AttestOutcome {
   subjectCommit?: string;
   verdict?: VerdictState;
   signerKeyId?: string;
-  attestation?: Attestation;
+  attestation?: AttestationV2;
 }
 
 // Programmatic attestation: read the latest evidence, guard against a
@@ -71,8 +67,8 @@ export async function attestProject(
     }
   }
 
-  let att = buildAttestation(record);
-  if (privateKeyPem) att = signAttestation(att, privateKeyPem);
+  let att = buildAttestationV2(record);
+  if (privateKeyPem) att = await signAttestationV2(att, privateKeyPem);
 
   let ref: string;
   if (opts.out) {
@@ -88,7 +84,7 @@ export async function attestProject(
     path: ref,
     subjectCommit: record.git.commit,
     verdict: record.verdict.state,
-    signerKeyId: att.signature ? signatureKeyId(att.signature) : undefined,
+    signerKeyId: att.envelope.signatures[0]?.keyid,
     attestation: att,
   };
 }

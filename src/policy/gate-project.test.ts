@@ -122,4 +122,34 @@ describe("gateProject", () => {
     expect(outcome.error).toMatch(/malformed/);
     expect(outcome.result).toBeUndefined();
   }, 30000);
+
+  it("SECURITY: fails closed on an attestation with an unknown schema — never trusts it", async () => {
+    const { root, commit } = repo();
+    writeEvidence(root, commit);
+    // A plausible-looking but unrecognized attestation schema (e.g. a future
+    // @3, or a downgrade/corruption of @1 or @2). gateProject must never
+    // guess a format for it — it should fail closed.
+    const attPath = join(root, "unknown.att.json");
+    writeFileSync(
+      attPath,
+      JSON.stringify({
+        schema: "veriskit/attestation@9",
+        statement: {
+          _type: "https://in-toto.io/Statement/v1",
+          subject: [{ name: "demo", digest: { gitCommit: commit } }],
+          predicateType: "https://veriskit.dev/attestations/verification/v1",
+          predicate: {
+            verdict: { state: "verified", verifiedCapabilities: [] },
+            git: { commit },
+          },
+        },
+        signature: null,
+      }),
+    );
+
+    const outcome = await gateProject(root, { attestation: attPath });
+    expect(outcome.ok).toBe(false);
+    expect(outcome.error).toMatch(/malformed attestation/);
+    expect(outcome.result).toBeUndefined();
+  }, 30000);
 });

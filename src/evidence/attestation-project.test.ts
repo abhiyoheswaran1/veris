@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { attestationStatement } from "./attestation.js";
 import { attestProject } from "./attestation-project.js";
+import type { AttestationV2 } from "./dsse.js";
 
 // A real one-commit git repo, mirroring the real project's .gitignore for
 // `.veris/*` so these sandboxes behave like production.
@@ -82,11 +84,16 @@ describe("attestProject", () => {
     expect(outcome.path).toBeTruthy();
     expect(outcome.subjectCommit).toBe(commit);
     expect(outcome.verdict).toBe("verified");
-    expect(outcome.attestation?.statement.subject[0]?.digest.gitCommit).toBe(
-      commit,
+    expect(outcome.attestation?.schema).toBe("veriskit/attestation@2");
+    const statement = attestationStatement(
+      outcome.attestation as AttestationV2,
     );
-    expect(outcome.attestation?.signature).toBeNull();
+    expect(statement.subject[0]?.digest.gitCommit).toBe(commit);
+    expect(outcome.attestation?.envelope.signatures).toEqual([]);
     expect(outcome.signerKeyId).toBeUndefined();
+
+    const written = JSON.parse(readFileSync(outcome.path as string, "utf8"));
+    expect(written.schema).toBe("veriskit/attestation@2");
   }, 30000);
 
   it("returns ok:false with a dirty-tree error on a dirty tree", async () => {
@@ -139,6 +146,6 @@ describe("attestProject", () => {
     const outcome = await attestProject(root, { key: keyPath });
     expect(outcome.ok).toBe(true);
     expect(outcome.signerKeyId).toBe(kp.keyId);
-    expect(outcome.attestation?.signature).not.toBeNull();
+    expect(outcome.attestation?.envelope.signatures).toHaveLength(1);
   }, 30000);
 });

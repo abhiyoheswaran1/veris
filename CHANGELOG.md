@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 — 2026-07-20
+
+### Changed
+- Attestations are now standard **DSSE / in-toto** envelopes (schema `veriskit/attestation@2`), so a `veris attest` result is verifiable by `cosign` and the wider supply-chain ecosystem — not just VerisKit's own verifier. Signing moves behind a pluggable backend; the built-in **ed25519** backend (zero-dependency, `VERISKIT_SIGNING_KEY`/`--key`) signs the DSSE payload directly. `veris gate` verifies `@2` attestations and still reads legacy `@1` ones. **Keyless signing via `cosign` (Fulcio + Rekor transparency log) is coming next** — the format and signing interface are now in place for it.
+
+### Security
+- Hardened the attestation reader against a parser-differential: the `@1`/`@2` format is decided strictly by the `schema` field, and the same statement that a signature covers is the one used for the verdict/subject/coverage — a crafted attestation can no longer have its signature checked over one payload while its verdict is read from another.
+
 ## 0.7.2 — 2026-07-20
 
 ### Added
