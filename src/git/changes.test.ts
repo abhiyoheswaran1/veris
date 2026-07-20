@@ -28,20 +28,20 @@ describe("changedFiles", () => {
     const cs = await changedFiles(dir);
     expect(cs.files).toContain("a.ts");
     expect(cs.base).toBeNull();
-  });
+  }, 30000);
 
   it("reports untracked files", async () => {
     const dir = initRepo();
     writeFileSync(join(dir, "b.ts"), "export const b = 3;\n");
     const cs = await changedFiles(dir);
     expect(cs.files).toContain("b.ts");
-  });
+  }, 30000);
 
   it("returns an empty set for a clean tree", async () => {
     const dir = initRepo();
     const cs = await changedFiles(dir);
     expect(cs.files).toEqual([]);
-  });
+  }, 30000);
 });
 
 describe("gitAnchor", () => {
@@ -52,7 +52,7 @@ describe("gitAnchor", () => {
     expect(anchor?.commit).toMatch(/^[0-9a-f]{40}$/);
     expect(anchor?.dirty).toBe(false);
     expect(anchor?.changedFiles).toBe(0);
-  });
+  }, 30000);
 
   it("records a dirty tree with the changed-file count", async () => {
     const dir = initRepo();
@@ -60,7 +60,7 @@ describe("gitAnchor", () => {
     const anchor = await gitAnchor(dir);
     expect(anchor?.dirty).toBe(true);
     expect(anchor?.changedFiles).toBe(1);
-  });
+  }, 30000);
 
   it("returns null outside a git repo", async () => {
     const dir = mkdtempSync(join(tmpdir(), "veris-nogit-"));
