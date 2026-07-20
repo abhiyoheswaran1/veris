@@ -67,3 +67,22 @@ describe("binExists", () => {
     }
   });
 });
+
+describe("binExists — executability", () => {
+  it("returns false for a present but non-executable file (POSIX)", () => {
+    if (process.platform === "win32") return; // extension implies executable on win32
+    const root = tmp();
+    const bin = join(root, ".venv", "bin");
+    mkdirSync(bin, { recursive: true });
+    const p = join(bin, "ruff");
+    writeFileSync(p, "#!/bin/sh\n");
+    chmodSync(p, 0o644); // not executable
+    expect(binExists(root, "python", "ruff")).toBe(false);
+  });
+
+  it("returns false for a directory named like the tool", () => {
+    const root = tmp();
+    mkdirSync(join(root, ".venv", "bin", "pytest"), { recursive: true });
+    expect(binExists(root, "python", "pytest")).toBe(false);
+  });
+});
