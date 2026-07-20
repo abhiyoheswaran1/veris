@@ -1,7 +1,15 @@
 import { join } from "node:path";
-import type { Capability, Check, CheckResult, Project } from "../core/model.js";
+import {
+  type Capability,
+  type Check,
+  type CheckResult,
+  checkKey,
+  type Language,
+  type Project,
+} from "../core/model.js";
 import { writeLog } from "../evidence/store.js";
 import { exec } from "../util/exec.js";
+import { resolveBin } from "../util/resolve-bin.js";
 
 export interface RunContext {
   root: string;
@@ -49,4 +57,45 @@ export async function runViaExec(
     result.outputTail = output.split("\n").slice(-TAIL_LINES).join("\n");
   }
   return result;
+}
+
+export interface ExecRunnerSpec {
+  runner: string;
+  capId: "unit" | "types" | "lint";
+  tool: string;
+  args: string[];
+  title: string;
+  pass: string;
+  fail: string;
+  timeoutMs: number;
+}
+
+// Generic adapter for a language whose tool is spawned by name (resolved via
+// resolveBin) and judged by exit code through runViaExec. Backs the Python and
+// Go runner families.
+export function makeExecRunner(
+  language: Language,
+  spec: ExecRunnerSpec,
+): Runner {
+  return {
+    id: spec.runner,
+    toCheck(project: Project, _cap: Capability): Check {
+      return {
+        id: spec.capId,
+        language,
+        key: checkKey(spec.capId, language),
+        title: spec.title,
+        runner: spec.runner,
+        cmd: resolveBin(project.root, language, spec.tool),
+        args: spec.args,
+      };
+    },
+    run(check: Check, ctx: RunContext): Promise<CheckResult> {
+      return runViaExec(check, ctx, {
+        pass: spec.pass,
+        fail: spec.fail,
+        timeoutMs: spec.timeoutMs,
+      });
+    },
+  };
 }
