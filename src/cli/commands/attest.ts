@@ -5,6 +5,7 @@ import {
 } from "../../evidence/attestation.js";
 import { signatureKeyId } from "../../evidence/signing.js";
 import { readLatestRecord, writeAttestation } from "../../evidence/store.js";
+import { anchorIgnoringAttestations } from "../../git/changes.js";
 
 export async function runAttest(
   root: string,
@@ -21,9 +22,20 @@ export async function runAttest(
     process.stderr.write("veris: cannot attest outside a git repository.\n");
     return 1;
   }
-  if (record.git.dirty) {
+  const anchor = await anchorIgnoringAttestations(root);
+  if (!anchor) {
+    process.stderr.write("veris: cannot attest outside a git repository.\n");
+    return 1;
+  }
+  if (anchor.dirty) {
     process.stderr.write(
       "veris: cannot attest a dirty tree — commit or stash first.\n",
+    );
+    return 1;
+  }
+  if (record.git.commit !== anchor.commit) {
+    process.stderr.write(
+      `veris: evidence is for ${record.git.commit.slice(0, 7)} but HEAD is ${anchor.commit.slice(0, 7)} — re-run \`veris verify\`.\n`,
     );
     return 1;
   }

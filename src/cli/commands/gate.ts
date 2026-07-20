@@ -3,7 +3,7 @@ import pc from "picocolors";
 import type { Attestation } from "../../evidence/attestation.js";
 import { keyId } from "../../evidence/signing.js";
 import { latestAttestation } from "../../evidence/store.js";
-import { changedFiles, type GitAnchor, gitAnchor } from "../../git/changes.js";
+import { anchorIgnoringAttestations } from "../../git/changes.js";
 import {
   evaluatePolicy,
   loadPolicy,
@@ -12,29 +12,6 @@ import {
 } from "../../policy/policy.js";
 import { readJsonIfExists } from "../../util/fs-safe.js";
 import { isPlain } from "../tty.js";
-
-// gitAnchor's `dirty` reflects the whole working tree, including veriskit's own
-// `.veris/` output. `.veris/attestations` is deliberately not gitignored
-// (attestations are meant to be shareable/committable proof), so a freshly
-// written attestation is itself untracked immediately after `attest` — which
-// would make a gate run right after an attest spuriously see a "dirty" tree.
-// Freshness should track the tracked SOURCE tree, so ONLY changes confined to
-// `.veris/attestations/` are exempt. Everything else under `.veris/` —
-// notably `policy.json` and `config.json`, which are tracked and read live
-// off disk by `loadPolicy` — must still trip the dirty check. Exempting all
-// of `.veris/` would let an uncommitted, unreviewed edit to policy.json
-// (e.g. dropping `require.signers` or setting `freshness: "off"`) sneak past
-// gate under a falsely "clean" tree.
-async function currentAnchor(root: string): Promise<GitAnchor | null> {
-  const anchor = await gitAnchor(root);
-  if (!anchor?.dirty) return anchor;
-  const cs = await changedFiles(root);
-  const meaningful = cs.files.filter(
-    (f) => !f.startsWith(".veris/attestations/"),
-  );
-  if (meaningful.length > 0) return anchor;
-  return { ...anchor, dirty: false, changedFiles: 0 };
-}
 
 export async function runGate(
   root: string,
@@ -90,7 +67,7 @@ export async function runGate(
     pubKeyId = opts.keyId;
   }
 
-  const git = await currentAnchor(root);
+  const git = await anchorIgnoringAttestations(root);
   let result: ReturnType<typeof evaluatePolicy>;
   try {
     result = evaluatePolicy(att, policy, git, { pubKeyId });

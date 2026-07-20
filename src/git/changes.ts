@@ -68,3 +68,21 @@ export async function gitAnchor(root: string): Promise<GitAnchor | null> {
     changedFiles: lines.length,
   };
 }
+
+// Like gitAnchor, but changes confined entirely to `.veris/attestations/`
+// (VerisKit's own shareable, deliberately-not-gitignored output) do NOT count
+// as dirty — so a freshly-written attestation doesn't make the tree look dirty
+// to attest/gate. Source and tracked `.veris/policy.json`/`config.json` still
+// trip dirty.
+export async function anchorIgnoringAttestations(
+  root: string,
+): Promise<GitAnchor | null> {
+  const anchor = await gitAnchor(root);
+  if (!anchor?.dirty) return anchor;
+  const cs = await changedFiles(root);
+  const meaningful = cs.files.filter(
+    (f) => !f.startsWith(".veris/attestations/"),
+  );
+  if (meaningful.length > 0) return anchor;
+  return { ...anchor, dirty: false, changedFiles: 0 };
+}
