@@ -227,6 +227,76 @@ writes it into `.veris/keys/`, which `veris init` gitignores.
 Commit `.veris/config.json` and `.veris/.gitignore`. `veris init` keeps `runs/`,
 `reports/`, `cache/`, `graph.json`, and `evidence/` out of your history.
 
+## Provable verification
+
+`veris attest` turns the latest `veris verify` run into a signed, portable
+attestation of the exact commit — an in-toto statement wrapping the evidence
+record, written to `.veris/attestations/<run-id>.att.json`:
+
+```bash
+veris attest                          # unsigned, or signed if VERISKIT_SIGNING_KEY is set
+veris attest --key .veris/keys/veriskit-signing.key
+```
+
+It refuses to run on a dirty tree or with no prior `veris verify`, so an
+attestation always names a real, reviewable commit. Sign it with
+`VERISKIT_SIGNING_KEY` (CI) or `--key <path>` (local); unsigned attestations
+are written too but a policy can require a signer.
+
+`veris gate` checks that a valid attestation proves the current commit meets
+`.veris/policy.json` — integrity, freshness against HEAD, verdict, and
+required capabilities×languages, plus a trusted signer whenever
+`require.signers` is set in policy — and exits 0 or 1, so it drops straight
+into a CI job:
+
+```bash
+veris gate
+```
+
+`veris init` writes a starter `.veris/policy.json`:
+
+```json
+{
+  "require": { "verdict": "verified" },
+  "freshness": "head"
+}
+```
+
+Commit both `.veris/policy.json` and `.veris/attestations/` — the policy is
+the contract, and attestations are the shareable proof that a commit met it.
+`veris init` gitignores VerisKit's other tool output (`runs/`, `reports/`,
+`cache/`, `evidence/`, `keys/`) so an untracked run never makes `gate`'s
+freshness check see a false "dirty" tree. Signing today is Ed25519 with a key
+you hold; keyless signing via Sigstore is planned.
+
+### Trust model: what `gate` does and does not prove
+
+Be deliberate about what policy you ship. The starter policy above has no
+`require.signers`, which makes it **integrity-only**: `gate` proves the
+attestation was not edited after it was written and that it matches the
+current commit on a clean tree, but it does **not** prove who produced it.
+Anyone who can write a file into `.veris/attestations/` — a compromised CI
+step, a local script, a careless `cp` — can hand-craft an attestation that
+passes an unsigned policy.
+
+To get a real trust gate, both sides have to hold up their end:
+
+- **Policy** must set `require.signers` to the trusted key id(s) that are
+  allowed to vouch for a passing run (`"*"` accepts any valid signature but
+  still checks one exists).
+- **Producer** must actually sign, via `VERISKIT_SIGNING_KEY` (CI) or
+  `--key <path>` (local) at `veris attest` time.
+
+Only when both are true does `gate` establish authorship, not just
+integrity. A signer check never runs on its own — it only fires when
+`require.signers` is present in policy (or `--pubkey`/`--key-id` is passed to
+`gate`), so an unsigned attestation against the starter policy still passes.
+
+Strict per-language gating also needs an explicit policy: listing
+`languages` alongside `capabilities` in `require` checks each
+capability×language pair individually. A bare `capabilities` entry with no
+`languages` matches that capability in *any* language the project has.
+
 ## What VerisKit does not do yet
 
 VerisKit says what it cannot do as plainly as what it can:

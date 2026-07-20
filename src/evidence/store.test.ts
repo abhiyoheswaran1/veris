@@ -4,12 +4,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { VerificationRun } from "../core/model.js";
+import type { Attestation } from "./attestation.js";
 import type { EvidenceRecord } from "./record.js";
 import { sha256 } from "./record.js";
 import {
+  attestationsDir,
   createRunDir,
   digestLogs,
+  latestAttestation,
   newRunId,
+  writeAttestation,
   writeEvidence,
   writeLog,
   writeReport,
@@ -105,5 +109,34 @@ describe("digestLogs", () => {
     } as unknown as VerificationRun;
     const digests = await digestLogs(run);
     expect(digests.unit).toBe(sha256("log body\n"));
+  });
+});
+
+describe("attestation store", () => {
+  const att = (commit: string): Attestation => ({
+    schema: "veriskit/attestation@1",
+    statement: {
+      _type: "https://in-toto.io/Statement/v1",
+      subject: [{ name: "demo", digest: { gitCommit: commit } }],
+      predicateType: "https://veriskit.dev/attestations/verification/v1",
+      // biome-ignore lint/suspicious/noExplicitAny: minimal predicate for the store round-trip
+      predicate: { id: "r1" } as any,
+    },
+    signature: null,
+  });
+
+  it("writes and reads back the latest attestation", async () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-att-"));
+    await writeAttestation(root, "run-1", att("a".repeat(40)));
+    const found = latestAttestation(root);
+    expect(found?.att.statement.subject[0]?.digest.gitCommit).toBe(
+      "a".repeat(40),
+    );
+    expect(found?.path.startsWith(attestationsDir(root))).toBe(true);
+  });
+
+  it("returns null when there are no attestations", () => {
+    const root = mkdtempSync(join(tmpdir(), "veris-att-none-"));
+    expect(latestAttestation(root)).toBeNull();
   });
 });

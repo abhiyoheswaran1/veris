@@ -12,6 +12,12 @@ const GITIGNORE = [
   "",
 ].join("\n");
 
+const POLICY = `${JSON.stringify(
+  { require: { verdict: "verified" }, freshness: "head" },
+  null,
+  2,
+)}\n`;
+
 export async function runInit(root: string): Promise<number> {
   const project = await detectProject(root);
   const dir = join(root, ".veris");
@@ -26,6 +32,7 @@ export async function runInit(root: string): Promise<number> {
     `${JSON.stringify({ checks: defaultChecks }, null, 2)}\n`,
   );
   await writeIfAbsent(join(dir, ".gitignore"), GITIGNORE);
+  await writeIfAbsent(join(dir, "policy.json"), POLICY);
 
   process.stdout.write(
     wroteConfig
